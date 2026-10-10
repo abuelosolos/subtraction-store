@@ -4,9 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProductRail } from "@/components/home/product-rail";
+import { ProductActions } from "@/components/product-actions";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNavbar } from "@/components/site-navbar";
 import { formatPrice, stockState } from "@/lib/catalog";
+import { SHIPPING_DOMESTIC_KOBO, SHIPPING_INTERNATIONAL_KOBO } from "@/lib/pricing";
 import {
   getAllProductSlugs,
   getProductBySlug,
@@ -43,7 +45,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
   ]);
   if (!product) notFound();
 
-  const { name, category, priceCents, currency, badge, image, description, stock, sizes } = product;
+  const { name, category, categorySlug, priceCents, currency, badge, image, description, stock, sizes } = product;
   const state = stockState(stock);
   const soldOut = state === "sold-out";
   const stockLabel =
@@ -62,7 +64,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             </li>
             <li aria-hidden="true">/</li>
             <li>
-              <a href="#" className="hover:text-ink">{category}</a>
+              <Link href={`/categories/${categorySlug}`} className="hover:text-ink">{category}</Link>
             </li>
             <li aria-hidden="true">/</li>
             <li aria-current="page" className="text-ink">{name}</li>
@@ -104,47 +106,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
 
             <p className="mt-6 max-w-[34rem] text-body text-muted">{description}</p>
 
-            <form className="mt-8 flex flex-col gap-6" aria-label="Add to cart">
-              {sizes.length > 0 ? (
-                <fieldset disabled={soldOut} className="min-w-0">
-                  <legend className="mb-3 flex w-full items-center justify-between text-body font-semibold">
-                    Select size
-                    <a href="#" className="text-caption font-normal text-muted underline underline-offset-4">
-                      Size guide
-                    </a>
-                  </legend>
-                  <div className="grid grid-cols-5 gap-2">
-                    {sizes.map((size) => (
-                      <label key={size} className="block">
-                        <input
-                          type="radio"
-                          name="size"
-                          value={size}
-                          className="peer sr-only"
-                          required
-                        />
-                        <span className="flex h-12 cursor-pointer items-center justify-center border border-line/40 text-body transition-colors duration-[var(--duration-standard)] hover:border-ink peer-checked:border-ink peer-checked:bg-surface-light peer-checked:text-ink-on-light peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--ink)] peer-disabled:cursor-not-allowed peer-disabled:opacity-40">
-                          {size}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              ) : null}
-
-              <div className="flex flex-col gap-3">
-                <button
-                  type="button"
-                  disabled={soldOut}
-                  className="btn btn-inverse btn-lg btn-block"
-                >
-                  {soldOut ? "Sold out" : "Add to cart"}
-                </button>
-                <button type="button" className="btn btn-outline btn-lg btn-block">
-                  Save to wishlist
-                </button>
-              </div>
-            </form>
+            <ProductActions slug={slug} name={name} sizes={sizes} soldOut={soldOut} />
 
             <div className="mt-10 border-t border-line/30">
               {[
@@ -160,7 +122,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
                 {
                   title: "Shipping & returns",
                   body: [
-                    "Free shipping on orders over $150",
+                    `Shipping within Nigeria ${formatPrice(SHIPPING_DOMESTIC_KOBO, "NGN")}, international ${formatPrice(SHIPPING_INTERNATIONAL_KOBO, "NGN")}`,
                     "Dispatched within 2 business days",
                     "Free returns within 30 days, unworn with tags",
                   ],

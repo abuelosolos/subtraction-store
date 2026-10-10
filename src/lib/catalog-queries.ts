@@ -9,6 +9,7 @@ import { categories, products, stock } from "@/db/schema";
 import type { HomeCategory, Product } from "@/lib/catalog";
 
 const NEW_ARRIVALS_COUNT = 8;
+const NEW_ARRIVALS_PAGE_COUNT = 24;
 const ACCESSORIES_COUNT = 4;
 const RELATED_COUNT = 6;
 
@@ -16,6 +17,7 @@ const productColumns = {
   slug: products.slug,
   name: products.name,
   category: categories.name,
+  categorySlug: categories.slug,
   priceCents: products.priceCents,
   currency: products.currency,
   badge: products.badge,
@@ -41,6 +43,7 @@ const toProduct = (row: ProductQueryRow): Product => ({
   slug: row.slug,
   name: row.name,
   category: row.category,
+  categorySlug: row.categorySlug,
   priceCents: row.priceCents,
   currency: row.currency,
   badge: row.badge ?? undefined,
@@ -55,6 +58,17 @@ export async function getNewArrivals(): Promise<Product[]> {
   cacheTag("catalog");
   cacheLife("minutes");
   const rows = await selectProducts().orderBy(desc(products.createdAt)).limit(NEW_ARRIVALS_COUNT);
+  return rows.map(toProduct);
+}
+
+/** Full New arrivals page: same ordering as the homepage rail, with a longer cut-off. */
+export async function getNewArrivalsPage(): Promise<Product[]> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+  const rows = await selectProducts()
+    .orderBy(desc(products.createdAt))
+    .limit(NEW_ARRIVALS_PAGE_COUNT);
   return rows.map(toProduct);
 }
 
@@ -118,13 +132,43 @@ export async function getHomeCategories(): Promise<HomeCategory[]> {
       ? [
           {
             label: c.name,
-            // No category routes yet; link to /categories/<slug> once they exist.
-            href: "#",
+            href: `/categories/${c.slug}`,
             image: { src: c.imageSrc, width: c.imageWidth, height: c.imageHeight, alt: c.imageAlt ?? c.name },
           },
         ]
       : [],
   );
+}
+
+export async function getCategoryBySlug(slug: string): Promise<{ slug: string; name: string } | null> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+  const [row] = await db
+    .select({ slug: categories.slug, name: categories.name })
+    .from(categories)
+    .where(eq(categories.slug, slug))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Newest first. */
+export async function getProductsByCategory(slug: string): Promise<Product[]> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+  const rows = await selectProducts()
+    .where(eq(categories.slug, slug))
+    .orderBy(desc(products.createdAt));
+  return rows.map(toProduct);
+}
+
+export async function getAllCategorySlugs(): Promise<string[]> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+  const rows = await db.select({ slug: categories.slug }).from(categories);
+  return rows.map((r) => r.slug);
 }
 
 /** For generateStaticParams. */

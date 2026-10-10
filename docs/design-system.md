@@ -126,6 +126,53 @@ Transition 300ms.
 
 To swap the design, edit only `src/styles/buttons.css`.
 
+## Cart and saved items
+
+Routes `/cart` and `/saved`. Both use the solid navbar, breadcrumb and `container-page`. Cart is
+a line list (4:5 thumbnail, name, category, size, price, quantity stepper, Remove) beside a
+`Summary` panel (subtotal, shipping "Calculated at checkout", `btn-inverse` Checkout) that stacks
+below `lg`. Saved items reuse `ProductCard` in the listing grid with a text Remove link.
+State is device-local in `localStorage` (`src/lib/cart-store.ts`, `src/lib/saved-store.ts`) and
+holds only slug, size and quantity. Names, prices and stock come from the server action in
+`src/app/cart/actions.ts` and are display-only; checkout re-prices from the database. Sold out
+and discontinued lines are flagged and excluded from the subtotal.
+
+## Account area and profile menu
+
+Routes `/account` (orders), `/account/settings` (Account info: name, phone, password; email
+read-only) and `/account/addresses` share `src/app/account/layout.tsx`: navbar, breadcrumb, a
+13rem side menu (`AccountNav`: Orders, Account info, Addresses, Sign out; `aria-current` shows a
+hairline marker on the left edge) and the content column. Below `md` the menu becomes a
+horizontally scrollable row with an underline marker, 44px targets. Each page has its own
+`text-heading-2` title and does its own
+session check (`requireUser`); `src/proxy.ts` is only the optimistic redirect. Orders list rows
+link to `/orders/[id]`; empty state uses the same faint "+" pattern as cart and saved items.
+Address book: add, edit in place, delete (inline confirm), make default; copy states that changes
+apply to future orders because orders keep their own address snapshot.
+
+Navbar Profile (signed in) is a disclosure button opening `.navbar-menu`: a borderless, square-cornered
+panel, pinned to the viewport's right edge directly under the bar (text stays left-aligned), filled `surface-light` over the
+hero and `surface-dark` once the bar is solid (and below md, where the bar is always solid), via the
+`--navbar-menu-*` variables set next to `--navbar-bg`. Shows name and email, then Orders, Addresses, Account settings and
+Sign out. It opens on hover for mouse pointers only (150 ms close delay, padded bridge), and on
+keyboard activation or tap. Escape, outside click, focus leaving and navigation close it. Items are
+44px tall. Signed out, the icon is a plain link to `/login`.
+
+## Form fields and auth pages
+
+`.field-label` + `.field` in `src/app/globals.css`: 0.3px `line` border, `rounded-field`, 10px
+padding, 14px text, placeholder in `subtle`. Hover and focus-visible switch the border to `ink`.
+Invalid state (`aria-invalid="true"`) thickens the border to 1px in `ink`; no error colour is
+introduced, the message is bold text in an `aria-live` region.
+
+Routes `/login` and `/register` (`src/app/(auth)`) share `AuthShell` (50/50 split from `lg`, image
+panel hidden below, form column `max-w-form`) and `AuthForm` (Better Auth email and password,
+`?next=` is accepted only as a same-origin path via `src/lib/safe-next.ts`). Social login
+buttons from the Figma frames are not built because no providers are configured. The panel
+photo is a stand-in (`/images/categories/men.webp`) until `auth/*.webp` exist.
+Server code reads the user through `getSessionUser()` in `src/lib/session.ts`; `src/proxy.ts`
+only does an optimistic redirect for `/checkout/*`.
+
 ## Navbar
 
 Transparent and dark-inked over the hero; a solid dark bar with light ink over darker sections.
@@ -192,6 +239,21 @@ Add to cart (`btn-inverse`) + Save (`btn-outline`) → Details and Shipping acco
 Stock state is derived from `stock` in `src/lib/catalog.ts`: 0 = sold out (disabled controls),
 1 to 5 = low stock ("only N left"), above 5 = in stock. States are monochrome (filled, half,
 empty dot) so no accent colour is introduced. Cards link to the page.
+
+## New arrivals page
+
+Route `/new-arrivals` (`src/app/new-arrivals/page.tsx`). Solid navbar, breadcrumb like the product
+page, `text-heading-2` title with a piece count, then `ProductCard` in a 2 / 3 / 4-column grid
+(base / `md` / `lg`) using the homepage grid gaps. The layout lives in
+`src/components/product-listing.tsx`, shared with the category page. Data: `getNewArrivalsPage()` (newest 24, same
+order as the homepage rail). Linked from the navbar and the homepage rail's "View all".
+
+## Category page
+
+Route `/categories/[slug]` (`src/app/categories/[slug]/page.tsx`), statically generated from the
+`categories` table, 404 for unknown slugs. Same `ProductListing` layout as New arrivals, title is
+the category name, products newest first. Linked from the homepage category tiles and the product
+page breadcrumb. There is no `/categories` index yet (most categories have no tile image).
 
 ## Nike reference notes
 

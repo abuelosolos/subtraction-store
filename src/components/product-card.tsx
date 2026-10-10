@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { formatPrice, type Product } from "@/lib/catalog";
 
-export function ProductCard({ product, sizes }: { product: Product; sizes: string }) {
+export function ProductCard({ product, sizes, priority = false }: { product: Product; sizes: string; priority?: boolean }) {
   const { name, category, priceCents, currency, badge, image } = product;
   const price = formatPrice(priceCents, currency);
   return (
@@ -16,6 +16,7 @@ export function ProductCard({ product, sizes }: { product: Product; sizes: strin
             width={image.width}
             height={image.height}
             sizes={sizes}
+            priority={priority}
             className="h-full w-full object-cover transition-transform duration-[var(--duration-standard)] ease-[var(--ease-standard)] group-hover:scale-[1.03] motion-reduce:transition-none"
           />
           {badge ? (

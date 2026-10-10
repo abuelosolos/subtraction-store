@@ -105,7 +105,12 @@ export default async function Home() {
         </section>
 
         <CategoryGrid categories={categories} />
-        <ProductRail id="arrivals-heading" title="New arrivals" products={newArrivals} />
+        <ProductRail
+          id="arrivals-heading"
+          title="New arrivals"
+          products={newArrivals}
+          linkHref="/new-arrivals"
+        />
         <Campaign />
         <ProductRail
           id="bestsellers-heading"

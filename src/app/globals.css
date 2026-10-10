@@ -225,6 +225,52 @@
   }
 }
 
+/* ---- Form fields (auth, checkout). Figma "Register / Login": 0.3px border,
+   6px radius, 10px padding, 14px text. Monochrome: invalid state thickens the
+   border to 1px in ink instead of adding a colour. ---- */
+@layer components {
+  .field-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .field {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: var(--border-width-hairline) solid var(--line);
+    border-radius: var(--radius-field);
+    background-color: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    transition: border-color var(--duration-standard) var(--ease-standard);
+  }
+
+  .field::placeholder {
+    color: var(--subtle);
+  }
+
+  .field:hover,
+  .field:focus-visible {
+    border-color: var(--ink);
+  }
+
+  .field[aria-invalid="true"] {
+    border-width: var(--border-width-default);
+    border-color: var(--ink);
+  }
+
+  .field:disabled {
+    opacity: 0.5;
+  }
+}
+
 /* ---- Utilities Tailwind can't express from tokens alone ---- */
 
 /* Centered content column with page gutters. Pair with max-w-* tokens. */
