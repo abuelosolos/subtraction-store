@@ -20,6 +20,15 @@
   --navbar-solid-bg: var(--color-surface-dark);
   --navbar-solid-ink: var(--color-ink-on-dark);
   --navbar-solid-link: var(--color-muted-on-dark);
+  /* Account menu fill follows the bar: light over the hero, dark when solid. */
+  --navbar-menu-hero-bg: var(--color-surface-light);
+  --navbar-menu-hero-ink: var(--color-ink-on-light);
+  --navbar-menu-hero-muted: var(--color-muted-on-light);
+  --navbar-menu-hero-hover: var(--color-overlay-watermark);
+  --navbar-menu-solid-bg: var(--color-surface-dark);
+  --navbar-menu-solid-ink: var(--color-ink-on-dark);
+  --navbar-menu-solid-muted: var(--color-muted-on-dark);
+  --navbar-menu-solid-hover: var(--color-overlay-ghost);
 }
 
 @layer components {
@@ -41,12 +50,20 @@
     --navbar-bg: var(--navbar-hero-bg);
     --navbar-ink: var(--navbar-hero-ink);
     --navbar-link: var(--navbar-hero-link);
+    --navbar-menu-bg: var(--navbar-menu-hero-bg);
+    --navbar-menu-ink: var(--navbar-menu-hero-ink);
+    --navbar-menu-muted: var(--navbar-menu-hero-muted);
+    --navbar-menu-hover: var(--navbar-menu-hero-hover);
   }
 
   .navbar[data-navbar="solid"] {
     --navbar-bg: var(--navbar-solid-bg);
     --navbar-ink: var(--navbar-solid-ink);
     --navbar-link: var(--navbar-solid-link);
+    --navbar-menu-bg: var(--navbar-menu-solid-bg);
+    --navbar-menu-ink: var(--navbar-menu-solid-ink);
+    --navbar-menu-muted: var(--navbar-menu-solid-muted);
+    --navbar-menu-hover: var(--navbar-menu-solid-hover);
   }
 
   /* Below md the hero crop puts dark hair under the bar, so stay solid. */
@@ -56,6 +73,10 @@
       --navbar-bg: var(--navbar-solid-bg);
       --navbar-ink: var(--navbar-solid-ink);
       --navbar-link: var(--navbar-solid-link);
+      --navbar-menu-bg: var(--navbar-menu-solid-bg);
+      --navbar-menu-ink: var(--navbar-menu-solid-ink);
+      --navbar-menu-muted: var(--navbar-menu-solid-muted);
+      --navbar-menu-hover: var(--navbar-menu-solid-hover);
     }
   }
 
@@ -71,5 +92,74 @@
   .navbar-link:hover,
   .navbar-link[aria-current="page"] {
     color: var(--navbar-ink);
+  }
+}
+
+/*
+ * Account menu (signed-in Profile). Always a dark panel so it reads over both
+ * the light hero and the solid bar. The wrapper's padding-top bridges the gap
+ * between the trigger and the panel so hover is not lost while the pointer
+ * travels. `.surface-dark` on the root restores light ink for focus rings.
+ */
+@layer components {
+  .navbar-profile {
+    position: relative;
+  }
+
+  .navbar-menu {
+    /* Fixed to the viewport's right edge; `top` stays auto so it sits directly
+       under the trigger (static position) and the padding bridge still works. */
+    position: fixed;
+    right: 0;
+    z-index: 60;
+    min-width: 15rem;
+    padding-top: 10px;
+    background-color: transparent;
+    text-align: left;
+    text-transform: none;
+  }
+
+  .navbar-menu[hidden] {
+    display: none;
+  }
+
+  .navbar-menu-panel {
+    padding-block: 0.5rem;
+    background-color: var(--navbar-menu-bg);
+    color: var(--navbar-menu-ink);
+    transition:
+      background-color var(--navbar-transition),
+      color var(--navbar-transition);
+  }
+
+  .navbar-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 1rem;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    color: var(--navbar-menu-muted);
+    text-align: left;
+    transition:
+      color var(--navbar-transition),
+      background-color var(--navbar-transition);
+  }
+
+  .navbar-menu-item:hover,
+  .navbar-menu-item:focus-visible {
+    color: var(--navbar-menu-ink);
+    background-color: var(--navbar-menu-hover);
+  }
+
+  /* Keep the panel on screen on narrow viewports. */
+  @media (max-width: 47.99rem) {
+    .navbar-menu {
+      position: fixed;
+      top: var(--navbar-height);
+      right: 0;
+      padding-top: 0;
+    }
   }
 }

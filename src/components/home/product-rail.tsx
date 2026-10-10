@@ -9,12 +9,14 @@ export function ProductRail({
   title,
   products,
   linkLabel = "View all",
+  linkHref,
   padTop = false,
 }: {
   id: string;
   title: string;
   products: Product[];
   linkLabel?: string;
+  linkHref?: string;
   /** Add top padding when the previous section has none (e.g. after the campaign block). */
   padTop?: boolean;
 }) {
@@ -24,7 +26,7 @@ export function ProductRail({
       className={`surface-dark pb-[var(--section-y)] ${padTop ? "pt-[var(--section-y)]" : ""}`}
     >
       <div className="container-page">
-        <SectionHeading id={id} title={title} linkLabel={linkLabel} />
+        <SectionHeading id={id} title={title} linkLabel={linkLabel} linkHref={linkHref} />
       </div>
       <ul
         className="container-page flex scroll-pl-[var(--gutter)] snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

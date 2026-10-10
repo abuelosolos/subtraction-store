@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const links = ["New arrivals", "Mens", "Womens"];
+import { NavbarProfileMenu } from "@/components/navbar-profile-menu";
+import { authClient } from "@/lib/auth-client";
+import { cartCount, useCart } from "@/lib/cart-store";
+
+const links = [
+  { label: "New arrivals", href: "/new-arrivals" },
+  { label: "Mens", href: "#" },
+  { label: "Womens", href: "#" },
+];
 
 const actions = [
   {
@@ -18,6 +26,7 @@ const actions = [
   },
   {
     label: "Cart",
+    href: "/cart",
     icon: (
       <>
         <path d="M5 8h14l-1 12H6L5 8Z" />
@@ -27,6 +36,7 @@ const actions = [
   },
   {
     label: "Saved",
+    href: "/saved",
     secondary: true,
     icon: (
       <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.600-7 10-7 10Z" />
@@ -34,6 +44,7 @@ const actions = [
   },
   {
     label: "Profile",
+    href: "/login",
     icon: (
       <>
         <circle cx="12" cy="8" r="4" />
@@ -50,6 +61,10 @@ const actions = [
  */
 export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" }) {
   const [scrolledPast, setScrolledPast] = useState(false);
+  // Client-side session read, so the navbar never blocks the static shell.
+  const { data: session } = authClient.useSession();
+  const signedIn = Boolean(session?.user);
+  const cartItems = cartCount(useCart());
 
   useEffect(() => {
     const hero = variant === "auto" ? document.getElementById("hero") : null;
@@ -72,21 +87,22 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
             SUBTRACTION.
           </Link>
           <nav aria-label="Primary" className="hidden items-center gap-[30px] md:flex">
-            {links.map((label) => (
-              <a key={label} href="#" className="navbar-link">
+            {links.map(({ label, href }) => (
+              <Link key={label} href={href} className="navbar-link">
                 {label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
         <ul className="flex items-center gap-5">
-          {actions.map(({ label, icon, secondary }) => (
-            <li key={label} className={secondary ? "hidden sm:block" : undefined}>
-              <a
-                href="#"
-                aria-label={label}
-                className="flex items-center gap-[3px] px-[5px]"
-              >
+          {actions.map(({ label, icon, secondary, href }) => {
+            // Profile: sign-in link when signed out, account menu when signed in.
+            const accountMenu = label === "Profile" && signedIn && session?.user;
+            const text = accountMenu ? "Account" : label;
+            const count = label === "Cart" ? cartItems : 0;
+            const accessibleLabel = count > 0 ? `${text}, ${count} ${count === 1 ? "item" : "items"}` : text;
+            const content = (
+              <>
                 <span className="flex rounded-pill p-[5px]">
                   <svg
                     width="21"
@@ -102,10 +118,27 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
                     {icon}
                   </svg>
                 </span>
-                <span className="hidden text-caption uppercase lg:inline">{label}</span>
-              </a>
-            </li>
-          ))}
+                <span className="hidden text-caption uppercase lg:inline">{text}</span>
+                {count > 0 ? (
+                  <span aria-hidden="true" className="text-caption font-medium">{count}</span>
+                ) : null}
+              </>
+            );
+            const className = "flex items-center gap-[3px] px-[5px]";
+            return (
+              <li key={label} className={secondary ? "hidden sm:block" : undefined}>
+                {accountMenu ? (
+                  <NavbarProfileMenu name={session.user.name} email={session.user.email}>
+                    {content}
+                  </NavbarProfileMenu>
+                ) : (
+                  <Link href={href ?? "#"} aria-label={accessibleLabel} className={className}>
+                    {content}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </header>

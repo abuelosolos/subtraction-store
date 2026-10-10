@@ -8,6 +8,7 @@ export type Product = {
   name: string;
   /** Category display name. */
   category: string;
+  categorySlug: string;
   /** Minor units (cents) in `currency`. */
   priceCents: number;
   currency: string;
@@ -38,7 +39,7 @@ export const lookbook = [
 
 /** Whole amounts show no decimals ($420); fractional amounts show cents ($19.99). */
 export const formatPrice = (cents: number, currency = "USD") =>
-  new Intl.NumberFormat("en-US", {
+  new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-US", {
     style: "currency",
     currency,
     minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
