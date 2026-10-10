@@ -24,8 +24,9 @@ npm run typecheck    # tsc --noEmit
 npm run db:generate  # drizzle-kit generate (SQL migrations -> ./drizzle)
 npm run db:migrate   # drizzle-kit migrate
 npm run db:push      # drizzle-kit push (sync schema directly, no migration files)
-npm run db:studio    # drizzle-kit studio
 ```
+
+`drizzle-kit studio` is intentionally not exposed as a script: its local server has no authentication and allows any browser origin, so a web page could run SQL against the connected database (CWE-942). Inspect data with the Neon console or `psql` instead.
 
 No test runner is configured. Setup: `cp .env.example .env.local` and fill in `DATABASE_URL` (Neon) and `BETTER_AUTH_SECRET`.
 
