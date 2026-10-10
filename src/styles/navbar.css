@@ -1,0 +1,75 @@
+/*
+ * Navbar surface states. CSS only: whichever component renders the navbar
+ * sets `data-navbar` ("hero" | "solid") from scroll position or section.
+ *
+ *   hero:  transparent, dark ink. Sits over the light hero photograph.
+ *   solid: dark fill, light ink. Used once the page is over dark sections.
+ *
+ * Figma: SubtractionNavbar variants "Variant2" (hero) and "Top" (solid), 61px high.
+ */
+
+:root {
+  --navbar-height: 61px;
+  --navbar-padding-y: 15px;
+  --navbar-transition: var(--duration-standard) var(--ease-standard);
+
+  --navbar-hero-bg: transparent;
+  --navbar-hero-ink: var(--color-ink-on-light);
+  --navbar-hero-link: var(--color-nav-on-light);
+
+  --navbar-solid-bg: var(--color-surface-dark);
+  --navbar-solid-ink: var(--color-ink-on-dark);
+  --navbar-solid-link: var(--color-muted-on-dark);
+}
+
+@layer components {
+  .navbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    min-height: var(--navbar-height);
+    padding: var(--navbar-padding-y) var(--gutter);
+    background-color: var(--navbar-bg);
+    color: var(--navbar-ink);
+    transition:
+      background-color var(--navbar-transition),
+      color var(--navbar-transition);
+  }
+
+  .navbar,
+  .navbar[data-navbar="hero"] {
+    --navbar-bg: var(--navbar-hero-bg);
+    --navbar-ink: var(--navbar-hero-ink);
+    --navbar-link: var(--navbar-hero-link);
+  }
+
+  .navbar[data-navbar="solid"] {
+    --navbar-bg: var(--navbar-solid-bg);
+    --navbar-ink: var(--navbar-solid-ink);
+    --navbar-link: var(--navbar-solid-link);
+  }
+
+  /* Below md the hero crop puts dark hair under the bar, so stay solid. */
+  @media (max-width: 47.99rem) {
+    .navbar,
+    .navbar[data-navbar="hero"] {
+      --navbar-bg: var(--navbar-solid-bg);
+      --navbar-ink: var(--navbar-solid-ink);
+      --navbar-link: var(--navbar-solid-link);
+    }
+  }
+
+  .navbar-link {
+    color: var(--navbar-link);
+    text-transform: uppercase;
+    white-space: nowrap;
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    transition: color var(--navbar-transition);
+  }
+
+  .navbar-link:hover,
+  .navbar-link[aria-current="page"] {
+    color: var(--navbar-ink);
+  }
+}

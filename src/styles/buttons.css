@@ -1,0 +1,161 @@
+/*
+ * SUBTRACTION. button styles: the single place to change when the button
+ * design is replaced. Pages use `.btn` + one variant + (optionally) one size.
+ * No page or component should hardcode button colors, padding or borders.
+ *
+ *   <a class="btn btn-primary">Add to Cart</a>
+ *   <a class="btn btn-ghost">Shop Now</a>
+ *   <button class="btn btn-inverse btn-block btn-lg">Create account</button>
+ *
+ *   <button class="btn btn-outline btn-lg">Save</button>   (outlined, for dark surfaces)
+ *
+ * Hover pattern (all variants): the fill swaps to the opposite tone and the
+ * border stays visible, so the change reads on both dark and light surfaces.
+ *   primary: dark fill  -> light fill, dark border
+ *   ghost:   clear fill -> dark fill, light text
+ *   inverse: light fill -> dark fill, light border
+ *   outline: clear fill -> light fill, dark text
+ */
+
+:root {
+  /* Shape and type */
+  --btn-radius: var(--radius-none);
+  --btn-border-width: var(--border-width-default);
+  --btn-font-family: var(--font-sans);
+  --btn-font-size: var(--text-caption);
+  --btn-line-height: var(--text-caption--line-height);
+  --btn-font-weight: 500;
+  --btn-gap: 0.5rem;
+  --btn-icon-size: 15px;
+  --btn-transition: var(--duration-standard) var(--ease-standard);
+
+  /* Sizes: md is the Figma default, lg is the auth form CTA */
+  --btn-padding-y-md: 10px;
+  --btn-padding-x-md: 20px;
+  --btn-padding-y-lg: 15px;
+  --btn-padding-x-lg: 20px;
+
+  /* primary: dark fill (Figma SubtractionBTN1/2) */
+  --btn-primary-bg: var(--color-surface-dark);
+  --btn-primary-ink: var(--color-ink-on-dark);
+  --btn-primary-border: var(--color-surface-dark);
+  --btn-primary-hover-bg: var(--color-surface-light);
+  --btn-primary-hover-ink: var(--color-ink-on-light);
+  --btn-primary-hover-border: var(--color-surface-dark);
+
+  /* ghost: outlined, for light surfaces (Figma SubtractionBTN3 default) */
+  --btn-ghost-bg: var(--color-overlay-ghost);
+  --btn-ghost-ink: var(--color-ink-on-light);
+  --btn-ghost-border: var(--color-surface-dark);
+  --btn-ghost-hover-bg: var(--color-surface-dark);
+  --btn-ghost-hover-ink: var(--color-ink-on-dark);
+  --btn-ghost-hover-border: var(--color-surface-dark);
+
+  /* inverse: light fill, for dark surfaces (landing CTA, auth submit) */
+  --btn-inverse-bg: var(--color-surface-light);
+  --btn-inverse-ink: var(--color-ink-on-light);
+  --btn-inverse-border: var(--color-surface-light);
+  --btn-inverse-hover-bg: var(--color-surface-dark);
+  --btn-inverse-hover-ink: var(--color-ink-on-dark);
+  --btn-inverse-hover-border: var(--color-surface-light);
+  --btn-inverse-shadow: none; /* auth submit uses var(--shadow-cta) */
+
+  /* outline: secondary action on dark surfaces (product page "Save") */
+  --btn-outline-bg: transparent;
+  --btn-outline-ink: var(--color-ink-on-dark);
+  --btn-outline-border: var(--color-line-on-dark);
+  --btn-outline-hover-bg: var(--color-surface-light);
+  --btn-outline-hover-ink: var(--color-ink-on-light);
+  --btn-outline-hover-border: var(--color-surface-light);
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--btn-gap);
+    padding: var(--btn-padding-y-md) var(--btn-padding-x-md);
+    border: var(--btn-border-width) solid var(--btn-border, transparent);
+    border-radius: var(--btn-radius);
+    background-color: var(--btn-bg);
+    color: var(--btn-ink);
+    box-shadow: var(--btn-shadow, none);
+    font-family: var(--btn-font-family);
+    font-size: var(--btn-font-size);
+    font-weight: var(--btn-font-weight);
+    line-height: var(--btn-line-height);
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--btn-transition),
+      color var(--btn-transition),
+      border-color var(--btn-transition);
+  }
+
+  .btn:hover {
+    background-color: var(--btn-hover-bg, var(--btn-bg));
+    color: var(--btn-hover-ink, var(--btn-ink));
+    border-color: var(--btn-hover-border, var(--btn-border));
+  }
+
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* Icons follow the text color so the hover swap recolors them. */
+  .btn > svg,
+  .btn > img {
+    width: var(--btn-icon-size);
+    height: var(--btn-icon-size);
+    flex: none;
+  }
+
+  .btn-primary {
+    --btn-bg: var(--btn-primary-bg);
+    --btn-ink: var(--btn-primary-ink);
+    --btn-border: var(--btn-primary-border);
+    --btn-hover-bg: var(--btn-primary-hover-bg);
+    --btn-hover-ink: var(--btn-primary-hover-ink);
+    --btn-hover-border: var(--btn-primary-hover-border);
+  }
+
+  .btn-ghost {
+    --btn-bg: var(--btn-ghost-bg);
+    --btn-ink: var(--btn-ghost-ink);
+    --btn-border: var(--btn-ghost-border);
+    --btn-hover-bg: var(--btn-ghost-hover-bg);
+    --btn-hover-ink: var(--btn-ghost-hover-ink);
+    --btn-hover-border: var(--btn-ghost-hover-border);
+  }
+
+  .btn-inverse {
+    --btn-bg: var(--btn-inverse-bg);
+    --btn-ink: var(--btn-inverse-ink);
+    --btn-border: var(--btn-inverse-border);
+    --btn-hover-bg: var(--btn-inverse-hover-bg);
+    --btn-hover-ink: var(--btn-inverse-hover-ink);
+    --btn-hover-border: var(--btn-inverse-hover-border);
+    --btn-shadow: var(--btn-inverse-shadow);
+  }
+
+  .btn-outline {
+    --btn-bg: var(--btn-outline-bg);
+    --btn-ink: var(--btn-outline-ink);
+    --btn-border: var(--btn-outline-border);
+    --btn-hover-bg: var(--btn-outline-hover-bg);
+    --btn-hover-ink: var(--btn-outline-hover-ink);
+    --btn-hover-border: var(--btn-outline-hover-border);
+  }
+
+  .btn-lg {
+    padding: var(--btn-padding-y-lg) var(--btn-padding-x-lg);
+  }
+
+  .btn-block {
+    display: flex;
+    width: 100%;
+  }
+}
