@@ -38,6 +38,8 @@ Figma asset URLs expire after 7 days. Export these to `public/images/` before th
 | Target path | Should show | Notes |
 | ----------- | ----------- | ----- |
 | `auth/register-panel.webp`, `auth/login-panel.webp` | Dark portrait panels for the auth pages | 602x610 and 552x610, 12px radius. Auth pages are not built yet. |
+| `story/break.webp` | Full-width dark break on `/story`: black-on-black fabric or garment detail, no logos | Currently shows `lookbook/02.webp`. 16:9 or wider, shown at 1280 x 448. |
+| `story/making.webp` | Split image beside "Made to repeat." on `/story`: garment construction or texture detail | Currently shows `lookbook/03.webp`. Portrait, shown about 640 x 512. |
 | Real product photography | Consistent studio shots per product | The Unsplash photos are stock stand-ins with different lighting and backgrounds. |
 | Vector partner mark | Replace the upscaled raster lockup | Not used on the page yet. |
 

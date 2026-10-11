@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { Campaign } from "@/components/home/campaign";
 import { CategoryGrid } from "@/components/home/category-grid";
@@ -42,7 +43,7 @@ export default async function Home() {
       <SiteNavbar />
       <main>
         {/* Hero: positions are in the 1280x670 Figma frame, anchored to the photo. Annotations show from md up; mobile shows the photo only. */}
-        <section id="hero" aria-label="Hero" className="hero-overlay surface-light">
+        <section id="hero" aria-label="Hero" className="hero-overlay">
           <Image
             src="/images/hero/hero.webp"
             alt="Model in reflective sports sunglasses and a black high-neck puffer jacket on a white ground"
@@ -53,6 +54,28 @@ export default async function Home() {
             className="hero-overlay-media"
           />
 
+          {/* Phones only: wordmark, write-up and buttons under the photo. */}
+          <div className="relative z-10 flex flex-1 flex-col justify-end gap-5 px-[var(--gutter)] pb-12 pt-8 md:hidden">
+            <h1 className="font-accent text-[clamp(2.25rem,12vw,3.5rem)] leading-none font-medium uppercase">
+              SUBTRACTION
+            </h1>
+            <p className="font-accent max-w-[26rem] text-body font-medium text-muted">
+              At some point the closet got full and nothing felt right. That was the problem. We
+              built the answer.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/collections" className="btn btn-inverse">Explore Collection</Link>
+              <Link href="/story" className="btn btn-outline">Our Story</Link>
+            </div>
+          </div>
+          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "8%", "--fy": "14%", "--fdur": "6s", "--fdelay": "0s" } as React.CSSProperties}>+</span>
+          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "84%", "--fy": "11%", "--fdur": "8s", "--fdelay": "1s" } as React.CSSProperties}>−</span>
+          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "90%", "--fy": "46%", "--fdur": "7s", "--fdelay": "2s" } as React.CSSProperties}>+</span>
+          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "6%", "--fy": "58%", "--fdur": "9s", "--fdelay": "0.5s" } as React.CSSProperties}>−</span>
+          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "76%", "--fy": "72%", "--fdur": "6.5s", "--fdelay": "1.5s" } as React.CSSProperties}>+</span>
+          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "18%", "--fy": "86%", "--fdur": "8.5s", "--fdelay": "2.5s" } as React.CSSProperties}>−</span>
+          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "50%", "--fy": "92%", "--fdur": "7.5s", "--fdelay": "0.8s" } as React.CSSProperties}>+</span>
+
           {/* Left: brand statement */}
           <div className="hero-anchor" style={anchor(35, 456, 308)}>
             <div className="flex flex-col items-start gap-[14px]">
@@ -61,9 +84,9 @@ export default async function Home() {
               At some point the closet got full and nothing felt right. That was the problem. We
               built the answer.
             </p>
-            <a href="#" className="btn btn-primary">
+            <Link href="/story" className="btn btn-primary">
               Our Story <ArrowUpRight />
-            </a>
+            </Link>
             </div>
           </div>
 

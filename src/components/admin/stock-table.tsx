@@ -6,6 +6,8 @@ import { useState, type FormEvent } from "react";
 
 import { adjustStockAction } from "@/app/admin/stock/actions";
 import { StatusBadge } from "@/components/admin/status-badge";
+import { Notice } from "@/components/admin/notice";
+import { CloseIcon, PencilIcon } from "@/components/ui/icons";
 import { LOW_STOCK_THRESHOLD } from "@/lib/catalog";
 
 type Row = { productId: number; name: string; slug: string; quantity: number; held: number; archived: boolean };
@@ -57,7 +59,7 @@ function AdjustForm({ row, onDone }: { row: Row; onDone: (note: string) => void 
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mt-4 grid gap-4 border border-line/30 p-4 sm:grid-cols-2">
+    <form onSubmit={onSubmit} noValidate className="mt-4 grid gap-4 rounded-field border border-[var(--admin-border)] bg-[var(--admin-raised)] p-4 sm:grid-cols-2">
       <div>
         <label htmlFor={`mode-${row.productId}`} className="field-label">Change</label>
         <select id={`mode-${row.productId}`} className="field" value={mode} onChange={(e) => setMode(e.target.value as "add" | "set")}>
@@ -86,7 +88,7 @@ function AdjustForm({ row, onDone }: { row: Row; onDone: (note: string) => void 
           {row.held} units are held by unpaid orders. If those customers pay late and stock has run out, the order goes to review.
         </p>
       ) : null}
-      <p role={error ? "alert" : "status"} className="min-h-[1.5em] text-body font-semibold sm:col-span-2">{error}</p>
+      {error ? <div className="sm:col-span-2"><Notice tone="bad" role="alert">{error}</Notice></div> : null}
       <div className="sm:col-span-2">
         <button type="submit" disabled={pending} className="btn btn-inverse btn-lg">{pending ? "Saving" : "Apply change"}</button>
       </div>
@@ -94,44 +96,125 @@ function AdjustForm({ row, onDone }: { row: Row; onDone: (note: string) => void 
   );
 }
 
+type Filter = "all" | "low" | "out";
+
 export function StockTable({ rows }: { rows: Row[] }) {
   const router = useRouter();
   const [open, setOpen] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
+
+  const stateOf = (r: Row): Filter =>
+    r.quantity === 0 ? "out" : r.quantity <= LOW_STOCK_THRESHOLD ? "low" : "all";
+  const counts = {
+    all: rows.length,
+    low: rows.filter((r) => stateOf(r) === "low").length,
+    out: rows.filter((r) => stateOf(r) === "out").length,
+  };
+  const q = query.trim().toLowerCase();
+  const visible = rows.filter(
+    (r) => (filter === "all" || stateOf(r) === filter) && (!q || r.name.toLowerCase().includes(q) || r.slug.includes(q)),
+  );
+
+  const tabs: { id: Filter; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "low", label: "Low stock" },
+    { id: "out", label: "Sold out" },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
-      <p role="status" className="min-h-[1.5em] text-body font-semibold">{message}</p>
-      <ul className="flex flex-col divide-y divide-line/30 border-y border-line/30">
-        {rows.map((r) => (
-          <li key={r.productId} className="py-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="text-body">
-                <Link href={`/admin/products/${r.productId}`} className="font-semibold underline underline-offset-4">{r.name}</Link>
-                {r.archived ? <span className="ml-2"><StatusBadge>Archived</StatusBadge></span> : null}
-                <p className="text-muted">
-                  {r.quantity} available{r.held > 0 ? ` · ${r.held} held` : ""}
-                  {r.quantity === 0 ? " · sold out" : r.quantity <= LOW_STOCK_THRESHOLD ? " · low" : ""}
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-expanded={open === r.productId}
-                onClick={() => { setOpen(open === r.productId ? null : r.productId); setMessage(null); }}
-                className="text-caption underline underline-offset-4"
-              >
-                {open === r.productId ? "Close" : "Adjust"}<span className="sr-only"> {r.name}</span>
-              </button>
-            </div>
-            {open === r.productId ? (
-              <AdjustForm
-                row={r}
-                onDone={(note) => { setOpen(null); setMessage(note); router.refresh(); }}
-              />
-            ) : null}
-          </li>
-        ))}
-      </ul>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="admin-tabs min-w-0 flex-1 border-b-0" role="group" aria-label="Stock filter">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className="admin-tab"
+              aria-current={filter === t.id ? "page" : undefined}
+              onClick={() => setFilter(t.id)}
+            >
+              {t.label}
+              <span className="admin-tab-count">{counts[t.id]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="w-full sm:w-64">
+          <label htmlFor="stock-search" className="sr-only">Search products</label>
+          <input
+            id="stock-search"
+            type="search"
+            className="field"
+            placeholder="Search products"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {message ? <Notice tone="ok" role="status">{message}</Notice> : null}
+
+      {visible.length === 0 ? (
+        <p className="admin-card px-4 py-10 text-center text-body text-muted">No products match.</p>
+      ) : (
+        <ul className="admin-card divide-y divide-[var(--admin-border)]">
+          {visible.map((r) => {
+            const state = stateOf(r);
+            return (
+              <li key={r.productId} className="px-4 py-4 sm:px-5">
+                <div className="grid items-center gap-x-6 gap-y-2 sm:grid-cols-[minmax(0,1fr)_6rem_6rem_8rem_auto]">
+                  <div className="min-w-0 text-body">
+                    <Link href={`/admin/products/${r.productId}`} className="font-semibold hover:underline">{r.name}</Link>
+                    {r.archived ? <span className="ml-2"><StatusBadge>Archived</StatusBadge></span> : null}
+                  </div>
+                  <p className="text-body tabular-nums sm:text-right">
+                    <span className="mr-2 text-caption uppercase text-muted sm:hidden">Available</span>
+                    {r.quantity}
+                  </p>
+                  <p className="text-body tabular-nums text-muted sm:text-right">
+                    <span className="mr-2 text-caption uppercase sm:hidden">Held</span>
+                    {r.held}
+                  </p>
+                  <div>
+                    {state === "out" ? (
+                      <StatusBadge tone="bad">Sold out</StatusBadge>
+                    ) : state === "low" ? (
+                      <StatusBadge tone="warn">Low stock</StatusBadge>
+                    ) : (
+                      <StatusBadge tone="ok">In stock</StatusBadge>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    aria-expanded={open === r.productId}
+                    onClick={() => { setOpen(open === r.productId ? null : r.productId); setMessage(null); }}
+                    className="admin-action justify-self-start sm:justify-self-end"
+                  >
+                    {open === r.productId ? (
+                      <>
+                        <CloseIcon />
+                        <span>Close<span className="sr-only"> {r.name}</span></span>
+                      </>
+                    ) : (
+                      <>
+                        <PencilIcon />
+                        <span>Adjust<span className="sr-only"> {r.name}</span></span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {open === r.productId ? (
+                  <AdjustForm
+                    row={r}
+                    onDone={(note) => { setOpen(null); setMessage(note); router.refresh(); }}
+                  />
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

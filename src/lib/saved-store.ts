@@ -25,3 +25,10 @@ export function toggleSaved(slug: string) {
 export function removeSaved(slug: string) {
   store.write(store.read().filter((s) => s !== slug));
 }
+
+/** Point saved items at a product's new slug after it was renamed. */
+export function renameSavedSlugs(renames: Record<string, string>) {
+  const slugs = store.read();
+  if (!slugs.some((s) => s in renames)) return;
+  store.write([...new Set(slugs.map((s) => renames[s] ?? s))].slice(0, MAX_SAVED));
+}

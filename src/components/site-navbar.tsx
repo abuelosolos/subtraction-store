@@ -3,16 +3,13 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 
+import { MobileMenu } from "@/components/mobile-menu";
 import { NavbarProfileMenu } from "@/components/navbar-profile-menu";
 import { NavbarSearch } from "@/components/navbar-search";
+import { MenuIcon } from "@/components/ui/icons";
 import { authClient } from "@/lib/auth-client";
 import { cartCount, useCart } from "@/lib/cart-store";
-
-const links = [
-  { label: "New arrivals", href: "/new-arrivals" },
-  { label: "Mens", href: "/categories/men" },
-  { label: "Womens", href: "/categories/women" },
-];
+import { primaryLinks as links } from "@/lib/nav-items";
 
 const actions = [
   {
@@ -37,7 +34,6 @@ const actions = [
   {
     label: "Saved",
     href: "/saved",
-    secondary: true,
     icon: (
       <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.600-7 10-7 10Z" />
     ),
@@ -105,8 +101,8 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
             ))}
           </nav>
         </div>
-        <ul className="flex items-center gap-5">
-          {actions.map(({ label, icon, secondary, href }) => {
+        <ul className="flex items-center gap-0 md:gap-5">
+          {actions.map(({ label, icon, href }) => {
             // Profile: sign-in link when signed out, account menu when signed in.
             const accountMenu = label === "Profile" && signedIn && session?.user;
             const text = accountMenu ? "Account" : label;
@@ -114,7 +110,7 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
             const accessibleLabel = count > 0 ? `${text}, ${count} ${count === 1 ? "item" : "items"}` : text;
             const content = (
               <>
-                <span className="flex rounded-pill p-[5px] max-md:p-[11.5px]">
+                <span className="flex rounded-pill p-[5px] max-md:p-[6px]">
                   <svg
                     width="21"
                     height="21"
@@ -136,8 +132,9 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
               </>
             );
             const className = "flex items-center gap-[3px] px-[5px]";
+            // Phones keep Search, Cart and the menu button; the rest live in the drawer.
             return (
-              <li key={label} className={secondary ? "hidden sm:block" : undefined}>
+              <li key={label} className={label === "Search" || label === "Cart" ? undefined : "hidden md:block"}>
                 {label === "Search" ? (
                   // usePathname is dynamic on routes like /orders/[id]; the fallback is
                   // the same icon, inert, until the component hydrates.
@@ -151,7 +148,7 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
                     <NavbarSearch>{content}</NavbarSearch>
                   </Suspense>
                 ) : accountMenu ? (
-                  <NavbarProfileMenu name={session.user.name} email={session.user.email} isAdmin={session.user.role === "admin"}>
+                  <NavbarProfileMenu name={session.user.name} email={session.user.email}>
                     {content}
                   </NavbarProfileMenu>
                 ) : (
@@ -162,6 +159,18 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
               </li>
             );
           })}
+          <li className="md:hidden">
+            {/* usePathname is dynamic on routes like /orders/[id]; the fallback is the same icon, inert. */}
+            <Suspense
+              fallback={
+                <button type="button" aria-label="Menu" disabled className="mobile-menu-trigger">
+                  <MenuIcon size={21} />
+                </button>
+              }
+            >
+              <MobileMenu />
+            </Suspense>
+          </li>
         </ul>
       </div>
     </header>

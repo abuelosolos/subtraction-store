@@ -32,6 +32,20 @@
   --glass-bg-strong: color-mix(in srgb, var(--color-surface-light) 72%, transparent);
   --glass-blur: blur(18px) saturate(1.4);
 
+  /*
+   * The bar itself is clearer than the menus: less fill, a lighter blur so the
+   * photograph stays readable, a brightness/saturation lift, and a faint sheen
+   * plus edge highlights so it still reads as a pane of glass.
+   */
+  --navbar-glass-bg: color-mix(in srgb, var(--color-surface-light) 32%, transparent);
+  --navbar-glass-blur: blur(10px) saturate(1.7) brightness(1.06);
+  --navbar-glass-sheen: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-surface-light) 45%, transparent),
+    transparent 70%
+  );
+  --navbar-glass-edge: color-mix(in srgb, var(--color-surface-light) 70%, transparent);
+
   /* Account menu fill follows the bar: glass over the hero, dark when solid. */
   --navbar-menu-hero-bg: var(--glass-bg-strong);
   --navbar-menu-hero-ink: var(--color-ink-on-light);
@@ -75,9 +89,13 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background-color: var(--glass-bg);
-    -webkit-backdrop-filter: var(--glass-blur);
-    backdrop-filter: var(--glass-blur);
+    background-color: var(--navbar-glass-bg);
+    background-image: var(--navbar-glass-sheen);
+    -webkit-backdrop-filter: var(--navbar-glass-blur);
+    backdrop-filter: var(--navbar-glass-blur);
+    box-shadow:
+      inset 0 1px 0 var(--navbar-glass-edge),
+      inset 0 -1px 0 var(--navbar-glass-edge);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--navbar-transition);
@@ -434,5 +452,126 @@
     .navbar-search-input {
       font-size: 1rem;
     }
+  }
+}
+
+/*
+ * Phone menu: hamburger in the bar (below md) and the right-hand drawer it
+ * opens. Always a dark panel, like the solid bar. The trigger is a 44px tap
+ * target that sits close to the Search icon.
+ */
+@layer components {
+  .mobile-menu-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .navbar-search-trigger {
+    min-height: 44px;
+  }
+
+  @media (min-width: 48rem) {
+    .mobile-menu-trigger,
+    .mobile-menu {
+      display: none;
+    }
+
+    .navbar-search-trigger {
+      min-height: 0;
+    }
+  }
+
+  .mobile-menu {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(20rem, 85vw);
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: var(--navbar-solid-bg);
+    color: var(--navbar-solid-ink);
+    text-transform: none;
+  }
+
+  .mobile-menu:not([open]) {
+    display: none;
+  }
+
+  .mobile-menu[open] {
+    display: flex;
+    flex-direction: column;
+    animation: mobile-menu-in var(--duration-standard) var(--ease-standard);
+  }
+
+  .mobile-menu::backdrop {
+    background-color: var(--color-overlay-panel);
+  }
+
+  @keyframes mobile-menu-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .mobile-menu-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--navbar-padding-y) var(--gutter);
+    min-height: var(--navbar-height);
+  }
+
+  .mobile-menu-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+  }
+
+  .mobile-menu-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem var(--gutter) 2rem;
+  }
+
+  .mobile-menu-group {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-overlay-ghost);
+  }
+
+  .mobile-menu-heading {
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    text-transform: uppercase;
+    color: var(--navbar-solid-link);
+  }
+
+  .mobile-menu-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    text-align: left;
+    color: var(--navbar-solid-link);
+    transition: color var(--navbar-transition);
+  }
+
+  .mobile-menu-item:hover,
+  .mobile-menu-item:focus-visible,
+  .mobile-menu-item[aria-current="page"] {
+    color: var(--navbar-solid-ink);
   }
 }

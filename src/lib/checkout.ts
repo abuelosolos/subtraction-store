@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { and, count, eq, isNull, sql } from "drizzle-orm";
 
-import { addresses, orderItems, orders, payments, products, stock } from "@/db/schema";
+import { addresses, orderItems, orders, payments, productSlugHistory, products, stock } from "@/db/schema";
 import type { DeliveryDetails } from "@/lib/customer";
 import { MAX_SAVED_ADDRESSES } from "@/lib/addresses";
 import {
@@ -49,7 +49,35 @@ export async function loadPricedProducts(
     .from(products)
     .leftJoin(stock, eq(stock.productId, products.id))
     .where(and(sql`${products.slug} in ${slugs}`, isNull(products.archivedAt)));
-  return new Map(rows.map((r) => [r.slug, { ...r, stock: Number(r.stock) }]));
+  const priced = new Map(rows.map((r) => [r.slug, { ...r, stock: Number(r.stock) }]));
+
+  // A cart line may still hold a slug the product used to have: price it as that
+  // product (looked up fresh, same rules) so a rename never breaks checkout.
+  const missing = slugs.filter((s) => !priced.has(s));
+  if (missing.length > 0) {
+    const renamed = await db
+      .select({
+        oldSlug: productSlugHistory.oldSlug,
+        id: products.id,
+        slug: products.slug,
+        name: products.name,
+        priceCents: products.priceCents,
+        currency: products.currency,
+        sizes: products.sizes,
+        stock: sql<number>`coalesce(${stock.quantity}, 0)::int`,
+      })
+      .from(productSlugHistory)
+      .innerJoin(products, eq(products.id, productSlugHistory.productId))
+      .leftJoin(stock, eq(stock.productId, products.id))
+      .where(and(sql`${productSlugHistory.oldSlug} in ${missing}`, isNull(products.archivedAt)));
+    for (const { oldSlug, ...r } of renamed) {
+      const product = { ...r, stock: Number(r.stock) };
+      priced.set(oldSlug, product);
+      // pricing groups by the product's own slug, so it must be present too
+      if (!priced.has(product.slug)) priced.set(product.slug, product);
+    }
+  }
+  return priced;
 }
 
 /** Advisory price for the checkout summary; submit re-prices again. */

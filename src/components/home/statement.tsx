@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function Statement() {
   return (
     <section aria-label="Brand statement" className="surface-dark border-y border-line/30">
@@ -5,9 +7,9 @@ export function Statement() {
         <p className="max-w-[48rem] text-heading-2 font-semibold">
           We&rsquo;re not minimal or not colorful. We&rsquo;re an exceptional difference.
         </p>
-        <a href="#" className="btn btn-inverse btn-lg">
+        <Link href="/story" className="btn btn-inverse btn-lg">
           Read our story
-        </a>
+        </Link>
       </div>
     </section>
   );

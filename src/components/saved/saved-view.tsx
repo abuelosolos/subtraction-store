@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { ProductCard } from "@/components/product-card";
+import { TrashIcon } from "@/components/ui/icons";
 import { useHydrated } from "@/lib/local-store";
 import { removeSaved, useSaved } from "@/lib/saved-store";
 import { useProducts } from "@/lib/use-products";
@@ -77,10 +78,10 @@ export function SavedView() {
             <button
               type="button"
               onClick={() => removeSaved(product.slug)}
-              className="mt-3 text-caption text-muted underline underline-offset-4 hover:text-ink"
+              className="mt-1 inline-flex size-11 items-center justify-center text-muted hover:text-ink"
             >
-              Remove
-              <span className="sr-only"> {product.name} from saved items</span>
+              <TrashIcon />
+              <span className="sr-only">Remove {product.name} from saved items</span>
             </button>
           </li>
         ))}

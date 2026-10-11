@@ -308,19 +308,33 @@ tracking.
 
 ## Admin area
 
-`/admin/*` is staff-only (role `admin`, set with `scripts/make-admin.ts`). It reuses the dark
-surface, `container-page`, `.field`, `.btn` and the account side-menu pattern (`SideNav` in
-`src/components/ui/side-nav.tsx`: left column from md, scrollable row below). The header is the
-solid `.navbar` bar with the wordmark, an "Admin" tag and "Back to shop"; no public navbar/footer.
+`/admin/*` is staff-only (role `admin`, set with `scripts/make-admin.ts`). It has its own shell and
+styles, in `src/styles/admin.css` (classes `admin-*`) and `src/components/admin/`.
 
-Primitives (`src/components/admin/`): `DataTable` (semantic `<table>`, hairline dividers,
-`hover:bg-ink/5`, `scope="col"`, `sr-only` caption, right-aligned numeric columns), `StatusBadge`
-(border + uppercase text, no colour; `strong` for items needing attention), `AdminPage` (title,
-actions, Suspense), `AdminGate` (real role check, render inside Suspense), `ImageField` (upload to
-Vercel Blob or an `/images/...` path, width/height/alt). Forms follow the account pattern:
-`noValidate`, `aria-invalid` + field error `role="alert"`, a `min-h-[1.5em]` status line, pending
-button label. Destructive actions use the inline "Confirm / Cancel" text buttons (no modal).
-Status text for orders and fulfilment lives in `src/lib/order-labels.ts`.
+Shell (`admin-shell.tsx`): from md a 15rem sidebar with grouped, icon-led links (Overview | Sales:
+Orders | Catalogue: Products, Categories | Inventory: Stock), "Back to shop" and "Sign out" at the
+bottom; below md a top bar with a hamburger that opens the same links in a right-hand drawer
+(`.mobile-menu` dialog). No public navbar or footer. Presentation only: every page still wraps its
+body in `<AdminGate>`.
+
+Layers: page ground `surface-dark`, cards `--admin-card` (4% light), raised/active `--admin-raised`
+(8%), borders `--admin-border` (14% light), no shadows. Tables, cards, tabs, stat cards, notices,
+action bar and dialog all use these.
+
+Status colour is the one place the system uses colour, and only inside `/admin`: muted tones
+`--admin-ok` (green), `--admin-warn` (amber), `--admin-bad` (red) via `.admin-tag[data-tone]`
+(dot + word, never colour alone) and `.admin-notice[data-tone]` (labelled "Done / Error / Heads up").
+The shop stays monochrome. Mapping lives in `components/admin/tones.ts` (paid ok, awaiting warn,
+failed / under review bad; unfulfilled warn, delivered ok).
+
+Primitives: `AdminPage` (breadcrumb, title + optional tag, description, actions, Suspense),
+`AdminCard`, `StatusBadge` (tone), `Notice`, `FilterTabs` (link tabs), `Pagination` (range + 
+Previous / Next buttons), `DataTable` (dividers, tabular numbers, whole table becomes stacked
+cards below md via `data-label`), `ConfirmDialog` (native `<dialog>`, states the consequence),
+`.admin-action` (36px, 44px on phones; `data-danger` for destructive). `RenameCell` renames a product in place from the list; `ImageField` measures width/height itself, offers Replace / Remove and explains upload failures. Forms: sectioned cards
+(Basics, Pricing and sizes, Organisation, Image, Danger zone) and a sticky `.admin-actionbar` with
+Save, Back and the result notice. Status text for orders and fulfilment lives in
+`src/lib/order-labels.ts`.
 
 ## Navbar search
 

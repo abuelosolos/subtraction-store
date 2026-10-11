@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export function Campaign() {
   return (
@@ -23,12 +24,12 @@ export function Campaign() {
             silhouette move you when you stop hiding behind a palette.
           </p>
           <div className="flex flex-wrap gap-3">
-            <a href="#" className="btn btn-primary btn-lg">
+            <Link href="/collections" className="btn btn-primary btn-lg">
               Explore collection
-            </a>
-            <a href="#" className="btn btn-ghost btn-lg">
+            </Link>
+            <Link href="/story" className="btn btn-ghost btn-lg">
               Our story
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -8,6 +8,12 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 // The client sends `products/<file name>`; reject anything else outright.
 const PATHNAME = /^(products|categories)\/[\w][\w .\-]{0,99}$/;
 
+/** Admin-only: is Blob storage configured here? Lets the form explain a failed upload. */
+export async function GET(): Promise<NextResponse> {
+  if (!(await getAdminUser())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  return NextResponse.json({ configured: Boolean(process.env.BLOB_READ_WRITE_TOKEN) });
+}
+
 /**
  * Client-upload token endpoint for product and category images. The browser
  * uploads straight to Blob (no server-action body limit); this route only

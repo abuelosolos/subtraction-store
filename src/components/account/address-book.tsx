@@ -8,6 +8,7 @@ import {
   setDefaultAddressAction,
 } from "@/app/account/addresses/actions";
 import { AddressForm } from "@/components/account/address-form";
+import { PencilIcon, TrashIcon } from "@/components/ui/icons";
 import type { SavedAddress } from "@/lib/addresses";
 
 type Country = { code: string; name: string };
@@ -119,8 +120,9 @@ export function AddressBook({
                           setMessage(null);
                           setEditing(a.id);
                         }}
-                        className="underline underline-offset-4"
+                        className="inline-flex min-h-11 items-center gap-1.5 underline underline-offset-4 md:min-h-0"
                       >
+                        <PencilIcon />
                         Edit<span className="sr-only"> {a.label || a.recipientName}</span>
                       </button>
                       {!a.isDefault ? (
@@ -136,9 +138,10 @@ export function AddressBook({
                       <button
                         type="button"
                         onClick={() => setConfirmingDelete(a.id)}
-                        className="text-muted underline underline-offset-4 hover:text-ink"
+                        className="inline-flex size-11 items-center justify-center text-muted hover:text-ink md:size-6"
                       >
-                        Delete<span className="sr-only"> {a.label || a.recipientName}</span>
+                        <TrashIcon />
+                        <span className="sr-only">Delete {a.label || a.recipientName}</span>
                       </button>
                     </>
                   )}

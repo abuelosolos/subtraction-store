@@ -1,0 +1,419 @@
+/*
+ * Admin back office (/admin/*). Dark, layered, easy to scan: page ground,
+ * slightly lighter cards, hairline borders. Status uses muted tone colours
+ * that exist ONLY here (always dot + word, never colour alone); the shop
+ * stays monochrome. See docs/design-system.md "Admin area".
+ */
+:root {
+  --admin-ok: #7bc29a;
+  --admin-warn: #d9b45a;
+  --admin-bad: #e08a8a;
+  --admin-card: color-mix(in srgb, var(--color-ink-on-dark) 4%, var(--color-surface-dark));
+  --admin-raised: color-mix(in srgb, var(--color-ink-on-dark) 8%, var(--color-surface-dark));
+  --admin-border: color-mix(in srgb, var(--color-ink-on-dark) 14%, transparent);
+  --admin-sidebar-width: 15rem;
+}
+
+@layer components {
+  /* ---- Shell ---- */
+  .admin-shell {
+    min-height: 100vh;
+    background-color: var(--color-surface-dark);
+    color: var(--color-ink-on-dark);
+  }
+
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--navbar-height);
+    padding-inline: var(--gutter);
+    background-color: var(--color-surface-dark);
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-main {
+    padding: 1.5rem var(--gutter) 5rem;
+    max-width: 80rem;
+  }
+
+  @media (min-width: 48rem) {
+    .admin-shell {
+      display: grid;
+      grid-template-columns: var(--admin-sidebar-width) minmax(0, 1fr);
+    }
+
+    .admin-topbar {
+      display: none;
+    }
+
+    .admin-sidebar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      border-right: 1px solid var(--admin-border);
+      background-color: var(--color-surface-dark);
+    }
+
+    .admin-main {
+      padding: 2.5rem 2.5rem 5rem;
+    }
+  }
+
+  .admin-nav-group-label {
+    padding: 1.25rem 1rem 0.5rem;
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    text-transform: uppercase;
+    color: var(--color-muted-on-dark);
+  }
+
+  .admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    margin-inline: 0.5rem;
+    padding-inline: 0.5rem;
+    border-radius: var(--radius-field);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    color: var(--color-muted-on-dark);
+    text-align: left;
+    transition:
+      background-color var(--duration-standard) var(--ease-standard),
+      color var(--duration-standard) var(--ease-standard);
+  }
+
+  .admin-nav-link:hover {
+    color: var(--color-ink-on-dark);
+    background-color: var(--admin-card);
+  }
+
+  .admin-nav-link[aria-current="page"] {
+    color: var(--color-ink-on-dark);
+    background-color: var(--admin-raised);
+    font-weight: 500;
+  }
+
+  /* ---- Page header ---- */
+  .admin-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    color: var(--color-muted-on-dark);
+  }
+
+  .admin-crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+
+  .admin-crumbs a:hover {
+    color: var(--color-ink-on-dark);
+  }
+
+  /* ---- Cards ---- */
+  .admin-card {
+    border: 1px solid var(--admin-border);
+    border-radius: var(--radius-field);
+    background-color: var(--admin-card);
+  }
+
+  .admin-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-card-body {
+    padding: 1.25rem;
+  }
+
+  /* ---- Status tags: dot + word, muted tone ---- */
+  .admin-tag {
+    --tone: var(--color-muted-on-dark);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.125rem 0.625rem 0.125rem 0.5rem;
+    border-radius: var(--radius-pill);
+    background-color: color-mix(in srgb, var(--tone) 14%, transparent);
+    color: var(--tone);
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .admin-tag::before {
+    content: "";
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: var(--radius-pill);
+    background-color: currentColor;
+  }
+
+  .admin-tag[data-tone="ok"] { --tone: var(--admin-ok); }
+  .admin-tag[data-tone="warn"] { --tone: var(--admin-warn); }
+  .admin-tag[data-tone="bad"] { --tone: var(--admin-bad); }
+
+  /* ---- Notices ---- */
+  .admin-notice {
+    --tone: var(--color-ink-on-dark);
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--tone) 40%, transparent);
+    border-radius: var(--radius-field);
+    background-color: color-mix(in srgb, var(--tone) 10%, transparent);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  .admin-notice[data-tone="ok"] { --tone: var(--admin-ok); }
+  .admin-notice[data-tone="warn"] { --tone: var(--admin-warn); }
+  .admin-notice[data-tone="bad"] { --tone: var(--admin-bad); }
+
+  .admin-notice-label {
+    flex: none;
+    font-weight: 600;
+    color: var(--tone);
+  }
+
+  /* ---- Tabs / filter chips ---- */
+  .admin-tabs {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding-inline: 0.75rem;
+    margin-bottom: -1px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    font-size: var(--text-body);
+    color: var(--color-muted-on-dark);
+  }
+
+  .admin-tab:hover {
+    color: var(--color-ink-on-dark);
+  }
+
+  .admin-tab[aria-current="page"] {
+    color: var(--color-ink-on-dark);
+    border-bottom-color: var(--color-ink-on-dark);
+    font-weight: 500;
+  }
+
+  .admin-tab-count {
+    font-size: var(--text-caption);
+    color: var(--color-muted-on-dark);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Stat cards ---- */
+  .admin-stat {
+    display: block;
+    padding: 1.25rem;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--radius-field);
+    background-color: var(--admin-card);
+    transition: background-color var(--duration-standard) var(--ease-standard);
+  }
+
+  a.admin-stat:hover {
+    background-color: var(--admin-raised);
+  }
+
+  /* ---- Table: dividers, tabular numbers, stacked cards on phones ---- */
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: var(--text-body);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .admin-table thead th {
+    padding: 0.75rem 1rem;
+    font-size: var(--text-caption);
+    font-weight: 500;
+    text-transform: uppercase;
+    color: var(--color-muted-on-dark);
+    border-bottom: 1px solid var(--admin-border);
+  }
+
+  .admin-table tbody tr {
+    border-bottom: 1px solid var(--admin-border);
+    transition: background-color var(--duration-standard) var(--ease-standard);
+  }
+
+  .admin-table tbody tr:hover {
+    background-color: var(--admin-raised);
+  }
+
+  .admin-table td {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+  }
+
+  .admin-table .is-numeric {
+    text-align: right;
+  }
+
+  @media (max-width: 47.99rem) {
+    .admin-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    .admin-table,
+    .admin-table tbody,
+    .admin-table tr,
+    .admin-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .admin-table tbody tr {
+      padding: 0.75rem 0;
+    }
+
+    .admin-table td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.25rem 1rem;
+      text-align: right;
+    }
+
+    .admin-table td::before {
+      content: attr(data-label);
+      flex: none;
+      color: var(--color-muted-on-dark);
+      font-size: var(--text-caption);
+      text-transform: uppercase;
+      text-align: left;
+    }
+
+    .admin-table td:first-child {
+      justify-content: flex-start;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .admin-table td:first-child::before {
+      display: none;
+    }
+  }
+
+  /* ---- Definition lists ---- */
+  .admin-dl {
+    display: grid;
+    grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr);
+    gap: 0.5rem 1rem;
+    font-size: var(--text-body);
+  }
+
+  .admin-dl dt {
+    color: var(--color-muted-on-dark);
+  }
+
+  /* ---- Sticky form action bar ---- */
+  .admin-actionbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--radius-field);
+    background-color: var(--admin-raised);
+  }
+
+  /* ---- Row actions: text + icon with a real hit area ---- */
+  .admin-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 36px;
+    padding-inline: 0.625rem;
+    border-radius: var(--radius-field);
+    font-size: var(--text-caption);
+    font-weight: 500;
+    color: var(--color-ink-on-dark);
+    transition: background-color var(--duration-standard) var(--ease-standard);
+  }
+
+  .admin-action:hover {
+    background-color: var(--admin-raised);
+  }
+
+  .admin-action[data-danger="true"] {
+    color: var(--admin-bad);
+  }
+
+  @media (max-width: 47.99rem) {
+    .admin-action {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* ---- Confirm dialog ---- */
+  .admin-dialog {
+    width: min(26rem, calc(100vw - 2rem));
+    margin: auto;
+    padding: 1.5rem;
+    border: 1px solid var(--admin-border);
+    border-radius: var(--radius-field);
+    background-color: var(--admin-raised);
+    color: var(--color-ink-on-dark);
+  }
+
+  .admin-dialog .btn[data-danger] {
+    --btn-bg: var(--admin-bad);
+    --btn-border: var(--admin-bad);
+    --btn-ink: var(--color-surface-dark);
+    --btn-hover-bg: transparent;
+    --btn-hover-ink: var(--admin-bad);
+    --btn-hover-border: var(--admin-bad);
+  }
+
+  .admin-dialog::backdrop {
+    background-color: rgb(0 0 0 / 0.6);
+  }
+}

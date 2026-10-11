@@ -7,7 +7,10 @@ export type Column<T> = {
   numeric?: boolean;
 };
 
-/** Semantic table built from existing hairline/divider tokens. */
+/**
+ * Semantic table. From md a normal table; on phones each row becomes a stacked
+ * card (the header text is shown beside each value via data-label).
+ */
 export function DataTable<T>({
   caption,
   columns,
@@ -22,30 +25,26 @@ export function DataTable<T>({
   empty?: string;
 }) {
   if (rows.length === 0) {
-    return <p className="border-y border-line/30 py-10 text-center text-body text-muted">{empty}</p>;
+    return <p className="admin-card px-4 py-10 text-center text-body text-muted">{empty}</p>;
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-body">
+    <div className="admin-card overflow-hidden">
+      <table className="admin-table">
         <caption className="sr-only">{caption}</caption>
         <thead>
-          <tr className="border-y border-line/30">
+          <tr>
             {columns.map((c) => (
-              <th
-                key={c.header}
-                scope="col"
-                className={`px-3 py-3 text-caption font-medium uppercase text-muted ${c.numeric ? "text-right" : ""}`}
-              >
+              <th key={c.header} scope="col" className={c.numeric ? "is-numeric" : undefined}>
                 {c.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-line/30 border-b border-line/30">
+        <tbody>
           {rows.map((row) => (
-            <tr key={rowKey(row)} className="hover:bg-ink/5">
+            <tr key={rowKey(row)}>
               {columns.map((c) => (
-                <td key={c.header} className={`px-3 py-3 align-top ${c.numeric ? "text-right" : ""}`}>
+                <td key={c.header} data-label={c.header} className={c.numeric ? "is-numeric" : undefined}>
                   {c.cell(row)}
                 </td>
               ))}

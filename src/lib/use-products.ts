@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 
 import { getProductsForSlugs } from "@/app/cart/actions";
+import { renameCartSlugs } from "@/lib/cart-store";
 import type { Product } from "@/lib/catalog";
+import { renameSavedSlugs } from "@/lib/saved-store";
 
 type Loaded = { key: string; products: Map<string, Product>; failed: boolean };
 
@@ -21,9 +23,18 @@ export function useProducts(slugs: string[]) {
     if (!key) return;
     let cancelled = false;
     getProductsForSlugs(key.split("\n"))
-      .then((list) => {
-        if (!cancelled) {
-          setLoaded({ key, products: new Map(list.map((p) => [p.slug, p])), failed: false });
+      .then(({ products: list, renames }) => {
+        if (cancelled) return;
+        // Renamed products are findable by their old slug until the stores catch up.
+        const map = new Map(list.map((p) => [p.slug, p]));
+        for (const [oldSlug, newSlug] of Object.entries(renames)) {
+          const product = map.get(newSlug);
+          if (product) map.set(oldSlug, product);
+        }
+        setLoaded({ key, products: map, failed: false });
+        if (Object.keys(renames).length > 0) {
+          renameCartSlugs(renames);
+          renameSavedSlugs(renames);
         }
       })
       .catch(() => {

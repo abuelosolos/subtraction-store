@@ -64,6 +64,22 @@ export const products = pgTable(
   ],
 );
 
+/**
+ * Slugs a product used to have. Lets old product URLs redirect and old cart or
+ * saved entries resolve after a slug change.
+ */
+export const productSlugHistory = pgTable(
+  "product_slug_history",
+  {
+    oldSlug: text("old_slug").primaryKey(),
+    productId: integer("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("product_slug_history_product_id_idx").on(t.productId)],
+);
+
 export const stock = pgTable(
   "stock",
   {

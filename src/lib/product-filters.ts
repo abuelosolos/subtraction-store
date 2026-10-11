@@ -180,3 +180,27 @@ export function listingTitle(categoryName: string | null, genders: readonly stri
   if (categoryName) return prefix ? `${prefix} ${categoryName}` : categoryName;
   return prefix ?? "All products";
 }
+
+export type ProductGroup = { slug: string; name: string; products: Product[] };
+
+/**
+ * Group products by category for the Men's / Women's landing rails. Groups
+ * follow `categoryOrder` (sort_order); the catch-all `men` / `women` categories
+ * go last and unknown slugs sit between them and the ordered ones.
+ */
+export function groupByCategory(
+  products: readonly Product[],
+  categoryOrder: readonly string[],
+): ProductGroup[] {
+  const bySlug = new Map<string, ProductGroup>();
+  for (const p of products) {
+    const g = bySlug.get(p.categorySlug) ?? { slug: p.categorySlug, name: p.category, products: [] };
+    g.products.push(p);
+    bySlug.set(p.categorySlug, g);
+  }
+  const rank = (slug: string) => {
+    const i = categoryOrder.indexOf(slug);
+    return (slug === "men" || slug === "women" ? 1000 : 0) + (i === -1 ? 500 : i);
+  };
+  return [...bySlug.values()].sort((a, b) => rank(a.slug) - rank(b.slug));
+}

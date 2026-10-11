@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
+import { AdminCard } from "@/components/admin/admin-card";
 import { AdminGate } from "@/components/admin/admin-gate";
 import { AdminPage } from "@/components/admin/page-frame";
 import { ProductForm } from "@/components/admin/product-form";
@@ -10,7 +11,11 @@ import { listStockHistory } from "@/lib/admin/stock";
 
 export default function EditProductPage({ params }: PageProps<"/admin/products/[id]">) {
   return (
-    <AdminPage title="Edit product" id="admin-edit-product">
+    <AdminPage
+      title="Edit product"
+      id="admin-edit-product"
+      crumbs={[{ label: "Products", href: "/admin/products" }, { label: "Edit product" }]}
+    >
       <AdminGate path="/admin/products">{async () => <EditProduct params={params} />}</AdminGate>
     </AdminPage>
   );
@@ -32,7 +37,7 @@ async function EditProduct({ params }: { params: PageProps<"/admin/products/[id]
     : (product.priceCents / 100).toFixed(2);
 
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-6">
       <ProductForm
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
         suggestions={suggestions}
@@ -53,22 +58,24 @@ async function EditProduct({ params }: { params: PageProps<"/admin/products/[id]
           archived: product.archivedAt !== null,
         }}
       />
-      <section aria-labelledby="history-heading" className="max-w-2xl">
-        <h2 id="history-heading" className="text-heading-3 font-semibold">Recent stock changes</h2>
-        <p className="mt-1 text-body text-muted">Currently {product.quantity} available.</p>
+      <AdminCard title="Recent stock changes" className="max-w-3xl" flush>
+        <p className="px-5 pt-4 text-body text-muted">Currently {product.quantity} available.</p>
         {history.length === 0 ? (
-          <p className="mt-4 text-body text-muted">No manual adjustments yet.</p>
+          <p className="px-5 py-4 text-body text-muted">No manual adjustments yet.</p>
         ) : (
-          <ul className="mt-4 flex flex-col divide-y divide-line/30 border-y border-line/30 text-body">
+          <ul className="mt-3 divide-y divide-[var(--admin-border)] border-t border-[var(--admin-border)] text-body">
             {history.map((h) => (
-              <li key={h.id} className="flex flex-wrap justify-between gap-2 py-2">
-                <span>{h.delta > 0 ? `+${h.delta}` : h.delta} · {h.reason}{h.note ? ` · ${h.note}` : ""}</span>
+              <li key={h.id} className="flex flex-wrap justify-between gap-2 px-5 py-3">
+                <span>
+                  <span className="font-medium tabular-nums">{h.delta > 0 ? `+${h.delta}` : h.delta}</span> · {h.reason}
+                  {h.note ? ` · ${h.note}` : ""}
+                </span>
                 <span className="text-muted">now {h.quantityAfter} · {h.createdAt.toLocaleString("en-GB")}</span>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </AdminCard>
     </div>
   );
 }

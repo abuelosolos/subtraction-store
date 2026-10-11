@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { CategoryRails } from "@/components/listing/category-rails";
 import { FilterableListing } from "@/components/listing/filterable-listing";
+import { ProductListing } from "@/components/product-listing";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNavbar } from "@/components/site-navbar";
 import {
@@ -11,7 +13,12 @@ import {
   getCategoryBySlug,
   getProductsByCategory,
 } from "@/lib/catalog-queries";
-import { parseFilters } from "@/lib/product-filters";
+import {
+  EMPTY_FILTERS,
+  applyFilters,
+  groupByCategory,
+  parseFilters,
+} from "@/lib/product-filters";
 
 /** `/categories/men` and `/categories/women` are gender views across every category. */
 const GENDER_VIEWS: Record<string, "men" | "women"> = { men: "men", women: "women" };
@@ -55,13 +62,33 @@ async function CategoryContent({
   const { slug } = await params;
   const query = await searchParams;
 
-  const [category, categoryOrder] = await Promise.all([
-    getCategoryBySlug(slug),
-    getAllCategorySlugs(),
-  ]);
+  const category = await getCategoryBySlug(slug);
   if (!category) notFound();
 
   const genderView = GENDER_VIEWS[slug];
+
+  // Men's / Women's landing: one rail per category, no filter. Any search param
+  // (a "View all" link, a shared filter URL) opens the filterable grid instead.
+  if (genderView && Object.keys(query).length === 0) {
+    const [all, categoryOrder] = await Promise.all([getAllProducts(), getAllCategorySlugs()]);
+    const inGender = applyFilters(all, { ...EMPTY_FILTERS, gender: [genderView] });
+    const title = genderView === "men" ? "Men's" : "Women's";
+    return (
+      <ProductListing
+        id="category-heading"
+        title={title}
+        subtitle="Shop by category. Newest first."
+        crumbs={[{ label: "Home", href: "/" }, { label: title }]}
+        products={inGender}
+        emptyMessage="Nothing here yet. Check back soon."
+        content={
+          inGender.length > 0 ? (
+            <CategoryRails groups={groupByCategory(inGender, categoryOrder)} gender={genderView} />
+          ) : undefined
+        }
+      />
+    );
+  }
   const products = genderView ? await getAllProducts() : await getProductsByCategory(slug);
 
   const filters = parseFilters(query, products);
@@ -76,7 +103,6 @@ async function CategoryContent({
       products={products}
       categoryName={genderView ? null : category.name}
       presetGender={genderView ?? null}
-      categoryOrder={categoryOrder}
       initialFilters={filters}
       baseCrumbs={[{ label: "Home", href: "/" }]}
       subtitle="Newest first."

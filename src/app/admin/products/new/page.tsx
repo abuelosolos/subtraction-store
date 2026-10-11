@@ -6,7 +6,11 @@ import { listAdminCategories, listAttributeSuggestions } from "@/lib/admin/catal
 
 export default function NewProductPage() {
   return (
-    <AdminPage title="New product" id="admin-new-product">
+    <AdminPage
+      title="New product"
+      id="admin-new-product"
+      crumbs={[{ label: "Products", href: "/admin/products" }, { label: "New product" }]}
+    >
       <AdminGate path="/admin/products/new">{async () => <NewProduct />}</AdminGate>
     </AdminPage>
   );

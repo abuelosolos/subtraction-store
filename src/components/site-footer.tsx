@@ -1,9 +1,23 @@
 import { FooterColumn } from "@/components/footer-column";
 
+const policies = ["Privacy", "Terms", "Cookies"];
+
 const columns = [
-  { title: "Shop", links: ["New arrivals", "Men", "Women", "Outerwear", "Accessories"] },
-  { title: "Help", links: ["Order status", "Shipping & delivery", "Returns", "Size guide", "Contact us"] },
-  { title: "Company", links: ["Our story", "Journal", "Careers", "Stockists"] },
+  {
+    title: "Shop",
+    links: [
+      { label: "New arrivals", href: "/new-arrivals" },
+      { label: "Men", href: "/categories/men" },
+      { label: "Women", href: "/categories/women" },
+      { label: "Outerwear", href: "/categories/outerwear" },
+      { label: "Accessories", href: "/categories/accessories" },
+    ],
+  },
+  {
+    title: "Help",
+    links: [{ label: "Order status", href: "/account" }, "Shipping & delivery", "Returns", "Size guide", "Contact us"],
+  },
+  { title: "Company", links: [{ label: "Our story", href: "/story" }, "Journal", "Careers", "Stockists"] },
 ];
 
 export function SiteFooter() {
@@ -19,14 +33,16 @@ export function SiteFooter() {
         {columns.map(({ title, links }) => (
           <FooterColumn key={title} title={title} links={links} />
         ))}
+        {/* Phones: the policy links become their own dropdown above the copyright. */}
+        <FooterColumn title="Terms & Policies" links={policies} mobileOnly />
       </div>
       <div className="border-t border-line/30">
         <div className="container-page flex flex-col gap-2 py-6 text-caption text-muted md:flex-row md:items-center md:justify-between">
           <p>&copy; 2026 SUBTRACTION. All rights reserved.</p>
-          <ul className="flex gap-6">
-            <li><a href="#">Privacy</a></li>
-            <li><a href="#">Terms</a></li>
-            <li><a href="#">Cookies</a></li>
+          <ul className="hidden gap-6 md:flex">
+            {policies.map((label) => (
+              <li key={label}><a href="#">{label}</a></li>
+            ))}
           </ul>
         </div>
       </div>

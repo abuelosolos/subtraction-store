@@ -22,8 +22,9 @@ function Group({
 }) {
   const id = useId();
   const selectedCount = facet.options.filter((o) => o.selected).length;
-  // Groups holding a selection start open so active filters are never hidden.
-  const [open, setOpen] = useState(selectedCount > 0);
+  // Groups holding a selection start open so active filters are never hidden;
+  // Category also starts open since it only appears on multi-category views.
+  const [open, setOpen] = useState(selectedCount > 0 || facet.key === "category");
 
   return (
     <section className="filter-group">

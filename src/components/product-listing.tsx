@@ -18,6 +18,7 @@ export function ProductListing({
   content,
   sidebar,
   toolbar,
+  headingAs: Heading = "h1",
 }: {
   id: string;
   title: string;
@@ -34,9 +35,12 @@ export function ProductListing({
   sidebar?: ReactNode;
   /** Shown beside the piece count (e.g. the mobile Filter button). */
   toolbar?: ReactNode;
+  /** Pages that already have an h1 (e.g. a banner) render this heading as h2. */
+  headingAs?: "h1" | "h2";
 }) {
   return (
     <>
+      {crumbs.length > 0 ? (
       <nav aria-label="Breadcrumb" className="container-page py-6 text-caption text-muted">
         <ol className="flex flex-wrap items-center gap-2">
           {crumbs.map(({ label, href }, i) => (
@@ -51,12 +55,13 @@ export function ProductListing({
           ))}
         </ol>
       </nav>
+      ) : null}
 
-      <section aria-labelledby={id} className="pb-[var(--section-y)]">
+      <section aria-labelledby={id} className={crumbs.length > 0 ? "pb-[var(--section-y)]" : "pt-10 pb-[var(--section-y)]"}>
         <div className="container-page">
           <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
             <div>
-              <h1 id={id} className="text-heading-2 font-semibold">{title}</h1>
+              <Heading id={id} className="text-heading-2 font-semibold">{title}</Heading>
               <p className="mt-4 max-w-prose text-body text-muted">{subtitle}</p>
             </div>
             <div className="flex items-center gap-4">

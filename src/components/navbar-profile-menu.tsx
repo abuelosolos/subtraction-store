@@ -1,16 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
-import { authClient } from "@/lib/auth-client";
-
-const items = [
-  { label: "Orders", href: "/account" },
-  { label: "Addresses", href: "/account/addresses" },
-  { label: "Account settings", href: "/account/settings" },
-] as const;
+import { accountItems as items } from "@/lib/nav-items";
+import { useSignOut } from "@/lib/use-sign-out";
 
 const HOVER_CLOSE_DELAY_MS = 150;
 
@@ -22,17 +17,14 @@ const HOVER_CLOSE_DELAY_MS = 150;
 export function NavbarProfileMenu({
   name,
   email,
-  isAdmin = false,
   children,
 }: {
   name: string;
   email: string;
-  /** Display only: shows a link to /admin, which re-checks the role itself. */
-  isAdmin?: boolean;
   /** The trigger's icon and label, rendered by the navbar so styles match. */
   children: ReactNode;
 }) {
-  const router = useRouter();
+  const signOut = useSignOut();
   const pathname = usePathname();
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -129,11 +121,6 @@ export function NavbarProfileMenu({
                 {label}
               </Link>
             ))}
-            {isAdmin ? (
-              <Link href="/admin" className="navbar-menu-item" onClick={hide}>
-                Admin
-              </Link>
-            ) : null}
           </nav>
           <div className="pt-1">
             <button
@@ -141,9 +128,7 @@ export function NavbarProfileMenu({
               className="navbar-menu-item"
               onClick={async () => {
                 hide();
-                await authClient.signOut();
-                router.push("/");
-                router.refresh();
+                await signOut();
               }}
             >
               Sign out

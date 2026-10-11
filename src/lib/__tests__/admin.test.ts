@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { adminAudit, orders, products, stockAdjustments } from "@/db/schema";
+import { adminAudit, orders, productSlugHistory, products, stockAdjustments } from "@/db/schema";
 import {
   categoryCreateSchema,
   createCategory,
@@ -12,6 +12,7 @@ import {
   isAllowedImageSrc,
   nairaToKobo,
   productCreateSchema,
+  renameProduct,
   setProductArchived,
   updateProduct,
 } from "@/lib/admin/catalogue";
@@ -237,11 +238,49 @@ describe.skipIf(!testUrl)("admin data layer (Neon test branch)", () => {
       const [p] = await fx.db.select().from(products).where(eq(products.slug, slug));
       const { slug: _slug, initialStock: _stock, ...rest } = input(slug, fx.categoryId);
       void _slug; void _stock;
-      expect(await updateProduct(fx.db, { id: admin }, p.id, { ...rest, name: "Renamed", price: 250_000 })).toEqual({ ok: true });
+      expect(await updateProduct(fx.db, { id: admin }, p.id, { ...rest, name: "Renamed", price: 250_000 })).toMatchObject({ ok: true });
       const [after] = await fx.db.select().from(products).where(eq(products.id, p.id));
       expect(after).toMatchObject({ slug, name: "Renamed", priceCents: 250_000 });
       expect(await auditCount("product.update", slug)).toBe(1);
       expect(await updateProduct(fx.db, { id: admin }, 2_000_000_000, { ...rest })).toEqual({ ok: false, reason: "not_found" });
+    });
+
+    it("renames a product with its own audit row", async () => {
+      const p = await fx.makeProduct("ren", 3);
+      expect(await renameProduct(fx.db, { id: admin }, p.id, "Brand new name")).toEqual({ ok: true });
+      const [after] = await fx.db.select().from(products).where(eq(products.id, p.id));
+      expect(after.name).toBe("Brand new name");
+      expect(await auditCount("product.rename", p.slug)).toBe(1);
+      expect(await renameProduct(fx.db, { id: admin }, 2_000_000_000, "Nope")).toEqual({ ok: false, reason: "not_found" });
+    });
+
+    it("changing the slug keeps the old one as a redirect and still prices old-slug cart lines", async () => {
+      const slug = `${fx.slugPrefix}-slugchg`;
+      const next = `${fx.slugPrefix}-slugchg-new`;
+      await createProduct(fx.db, { id: admin }, input(slug, fx.categoryId));
+      const [p] = await fx.db.select().from(products).where(eq(products.slug, slug));
+      const { slug: _s, initialStock: _i, ...rest } = input(slug, fx.categoryId);
+      void _s; void _i;
+
+      expect(await updateProduct(fx.db, { id: admin }, p.id, { ...rest, slug: next })).toMatchObject({ ok: true });
+      const [after] = await fx.db.select().from(products).where(eq(products.id, p.id));
+      expect(after.slug).toBe(next);
+      const [hist] = await fx.db.select().from(productSlugHistory).where(eq(productSlugHistory.oldSlug, slug));
+      expect(hist?.productId).toBe(p.id);
+
+      // An old-slug cart line prices as the same product, under both slugs.
+      const priced = await loadPricedProducts(fx.db, [slug]);
+      expect(priced.get(slug)?.id).toBe(p.id);
+      expect(priced.get(next)?.id).toBe(p.id);
+
+      // Another product cannot take the new slug or the retired one.
+      const other = await fx.makeProduct("slugother", 1);
+      expect(await updateProduct(fx.db, { id: admin }, other.id, { ...rest, slug: next })).toEqual({ ok: false, reason: "slug_taken" });
+      expect(await updateProduct(fx.db, { id: admin }, other.id, { ...rest, slug })).toEqual({ ok: false, reason: "slug_taken" });
+
+      // Going back to the old slug drops its history row.
+      expect(await updateProduct(fx.db, { id: admin }, p.id, { ...rest, slug })).toMatchObject({ ok: true });
+      expect(await fx.db.select().from(productSlugHistory).where(eq(productSlugHistory.oldSlug, slug))).toHaveLength(0);
     });
 
     it("archived products are excluded from checkout pricing and can be restored", async () => {

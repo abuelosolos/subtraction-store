@@ -50,6 +50,13 @@
       "when": 1791677753031,
       "tag": "0006_magical_vulture",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791714375799,
+      "tag": "0007_deep_abomination",
+      "breakpoints": true
     }
   ]
 }

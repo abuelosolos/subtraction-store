@@ -89,6 +89,12 @@ export const productInputSchema = z.object({
 });
 export type ProductInput = z.output<typeof productInputSchema>;
 
+/** Update: the slug is optional; sending a different one renames the address and keeps the old one as a redirect. */
+export const productUpdateSchema = productInputSchema.extend({ slug: slugSchema.optional() });
+export type ProductUpdateInput = z.output<typeof productUpdateSchema>;
+
+export const productNameSchema = text(2, 120);
+
 export const productCreateSchema = productInputSchema.extend({
   slug: slugSchema,
   initialStock: z.coerce.number().int().min(0).max(100_000),
@@ -265,19 +271,38 @@ export async function createProduct(
   }
 }
 
-/** Slug is immutable. Audit row is written from the updated row, so a miss logs nothing. */
+/**
+ * Update a product in ONE statement. If `input.slug` differs from the current
+ * slug the old one is stored in `product_slug_history` (so old links redirect)
+ * and a slug already used by another product, now or in the past, is refused.
+ * The audit row is written from the updated row, so a miss logs nothing.
+ */
 export async function updateProduct(
   db: Db,
   actor: Actor,
   id: number,
-  input: ProductInput,
-): Promise<WriteResult> {
+  input: ProductUpdateInput,
+): Promise<WriteResult & { previousImageSrc?: string }> {
   const detail = JSON.stringify({ name: input.name, priceKobo: input.price });
+  const newSlug = input.slug ?? null;
   try {
+    if (newSlug) {
+      const clash = await db.execute(sql`
+        select 1 from product_slug_history where old_slug = ${newSlug} and product_id <> ${id}::int
+        union all
+        select 1 from products where slug = ${newSlug} and id <> ${id}::int
+        limit 1
+      `);
+      if (clash.rows.length > 0) return { ok: false, reason: "slug_taken" };
+    }
     const result = await db.execute(sql`
-      with u as (
+      with old as (
+        select id, slug, image_src from products where id = ${id}::int
+      ),
+      u as (
         update products
-        set name = ${input.name}, description = ${input.description},
+        set slug = coalesce(${newSlug}, slug),
+            name = ${input.name}, description = ${input.description},
             category_id = ${input.categoryId}::int, price_cents = ${input.price}::int,
             badge = ${input.badge}, image_src = ${input.imageSrc},
             image_width = ${input.imageWidth}::int, image_height = ${input.imageHeight}::int,
@@ -288,18 +313,62 @@ export async function updateProduct(
         where id = ${id}::int
         returning id, slug
       ),
+      h as (
+        insert into product_slug_history (old_slug, product_id)
+        select old.slug, old.id from old join u on u.id = old.id where old.slug <> u.slug
+        on conflict (old_slug) do update set product_id = excluded.product_id, changed_at = now()
+        returning old_slug
+      ),
+      d as (
+        delete from product_slug_history
+        where product_id = ${id}::int and old_slug = ${newSlug}
+        returning old_slug
+      ),
       a as (
         insert into admin_audit (actor_user_id, action, target_type, target_id, detail)
-        select ${actor.id}, 'product.update', 'product', slug, ${detail}::jsonb from u
+        select ${actor.id}, 'product.update', 'product', slug,
+               (${detail}::jsonb || jsonb_build_object('previousSlug', (select slug from old)))
+        from u
         returning id
       )
-      select count(*)::int as n from u
+      select count(*)::int as n, (select image_src from old) as previous_image_src from u
     `);
-    return Number((result.rows[0] as { n: number }).n) === 1 ? { ok: true } : { ok: false, reason: "not_found" };
+    const row = result.rows[0] as { n: number; previous_image_src: string | null };
+    return Number(row.n) === 1
+      ? { ok: true, previousImageSrc: row.previous_image_src ?? undefined }
+      : { ok: false, reason: "not_found" };
   } catch (err) {
-    if (pgErrorCode(err) === "23503") return { ok: false, reason: "category_not_found" };
+    const code = pgErrorCode(err);
+    if (code === "23503") return { ok: false, reason: "category_not_found" };
+    if (code === "23505") return { ok: false, reason: "slug_taken" };
     throw err;
   }
+}
+
+/** Rename only: name change plus its own audit row, in one statement. */
+export async function renameProduct(
+  db: Db,
+  actor: Actor,
+  id: number,
+  name: string,
+): Promise<WriteResult> {
+  const result = await db.execute(sql`
+    with old as (select id, name from products where id = ${id}::int),
+    u as (
+      update products set name = ${name}, updated_at = now()
+      where id = ${id}::int
+      returning id, slug
+    ),
+    a as (
+      insert into admin_audit (actor_user_id, action, target_type, target_id, detail)
+      select ${actor.id}, 'product.rename', 'product', u.slug,
+             jsonb_build_object('from', old.name, 'to', ${name}::text)
+      from u join old on old.id = u.id
+      returning id
+    )
+    select count(*)::int as n from u
+  `);
+  return Number((result.rows[0] as { n: number }).n) === 1 ? { ok: true } : { ok: false, reason: "not_found" };
 }
 
 export async function setProductArchived(
