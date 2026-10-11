@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { ProductRail } from "@/components/home/product-rail";
 import { ProductActions } from "@/components/product-actions";
@@ -11,6 +11,7 @@ import { formatPrice, stockState } from "@/lib/catalog";
 import { SHIPPING_DOMESTIC_KOBO, SHIPPING_INTERNATIONAL_KOBO } from "@/lib/pricing";
 import {
   getAllProductSlugs,
+  getCurrentSlugForOldSlug,
   getProductBySlug,
   getRelatedProducts,
 } from "@/lib/catalog-queries";
@@ -43,7 +44,12 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
     getProductBySlug(slug),
     getRelatedProducts(slug),
   ]);
-  if (!product) notFound();
+  if (!product) {
+    // A renamed product: send old links to its current address.
+    const current = await getCurrentSlugForOldSlug(slug);
+    if (current) permanentRedirect(`/products/${current}`);
+    notFound();
+  }
 
   const { name, category, categorySlug, priceCents, currency, badge, image, description, stock, sizes } = product;
   const state = stockState(stock);

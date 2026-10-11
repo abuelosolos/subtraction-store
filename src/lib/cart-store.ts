@@ -66,6 +66,20 @@ export function removeFromCart(slug: string, size: string | null) {
   store.write(store.read().filter((l) => !same(l, slug, size)));
 }
 
+/** Point lines at a product's new slug after it was renamed; merges duplicates. */
+export function renameCartSlugs(renames: Record<string, string>) {
+  const lines = store.read();
+  if (!lines.some((l) => l.slug in renames)) return;
+  const out: CartLine[] = [];
+  for (const line of lines) {
+    const slug = renames[line.slug] ?? line.slug;
+    const existing = out.find((l) => same(l, slug, line.size));
+    if (existing) existing.quantity = clampQuantity(existing.quantity + line.quantity);
+    else out.push({ ...line, slug });
+  }
+  store.write(out);
+}
+
 export const cartCount = (lines: CartLine[]) => lines.reduce((n, l) => n + l.quantity, 0);
 
 export function clearCart() {

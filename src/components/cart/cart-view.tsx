@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 
+import { TrashIcon } from "@/components/ui/icons";
 import { formatPrice, type Product } from "@/lib/catalog";
 import {
   removeFromCart,
@@ -131,10 +132,10 @@ function CartRow({
     <button
       type="button"
       onClick={() => removeFromCart(line.slug, line.size)}
-      className="text-caption text-muted underline underline-offset-4 hover:text-ink"
+      className="inline-flex size-11 items-center justify-center text-muted hover:text-ink"
     >
-      Remove
-      <span className="sr-only"> {product?.name ?? line.slug} from cart</span>
+      <TrashIcon />
+      <span className="sr-only">Remove {product?.name ?? line.slug} from cart</span>
     </button>
   );
 

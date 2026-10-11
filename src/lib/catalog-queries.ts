@@ -5,7 +5,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { and, asc, desc, eq, isNull, ne, sql, type SQL } from "drizzle-orm";
 
 import { db } from "@/db";
-import { categories, products, stock } from "@/db/schema";
+import { categories, productSlugHistory, products, stock } from "@/db/schema";
 import type { HomeCategory, Product } from "@/lib/catalog";
 import type { SearchItem } from "@/lib/search";
 
@@ -110,6 +110,20 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   cacheLife("minutes");
   const [row] = await selectProducts(eq(products.slug, slug)).limit(1);
   return row ? toProduct(row) : null;
+}
+
+/** For a slug the product used to have: the slug it answers to now (redirect target), or null. */
+export async function getCurrentSlugForOldSlug(oldSlug: string): Promise<string | null> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+  const [row] = await db
+    .select({ slug: products.slug })
+    .from(productSlugHistory)
+    .innerJoin(products, eq(products.id, productSlugHistory.productId))
+    .where(and(eq(productSlugHistory.oldSlug, oldSlug), isNull(products.archivedAt)))
+    .limit(1);
+  return row?.slug ?? null;
 }
 
 /** Same category first, then the rest (newest first), excluding the product itself. */

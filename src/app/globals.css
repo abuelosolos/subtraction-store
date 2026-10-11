@@ -2,6 +2,7 @@
 @import "../styles/buttons.css";
 @import "../styles/navbar.css";
 @import "../styles/listing-filters.css";
+@import "../styles/admin.css";
 
 /*
  * SUBTRACTION. design tokens. Reference: docs/design-system.md.
@@ -332,11 +333,33 @@
   width: 100%;
   max-width: var(--container-frame);
   margin-inline: auto;
-  display: block;
 
+  /* Phones: black, full-height column. The photo sits near the top at its
+     natural ratio (gap below the navbar is 30% of the photo's own height),
+     then the wordmark, write-up and buttons. Same tokens as .surface-dark. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+  padding-top: calc(var(--navbar-height) + 100vw * 1340 / 2560 * 0.3);
+  --surface: var(--color-surface-dark);
+  --ink: var(--color-ink-on-dark);
+  --muted: var(--color-muted-on-dark);
+  --subtle: var(--color-subtle-on-dark);
+  --line: var(--color-line-on-dark);
+  background-color: var(--surface);
+  color: var(--ink);
+
+  /* md and up: the light photographic overlay composition (.surface-light). */
   @media (min-width: 48rem) {
     display: grid;
+    min-height: 0;
+    padding-top: 0;
     aspect-ratio: 1280 / 670;
+    --surface: var(--color-surface-light);
+    --ink: var(--color-ink-on-light);
+    --muted: var(--color-muted-on-light);
+    --subtle: var(--color-muted-on-light);
+    --line: var(--color-line-on-light);
 
     & > * {
       grid-area: 1 / 1;
@@ -344,17 +367,55 @@
   }
 }
 
-/* Capped so tall tablets don't get a giant crop. */
+/* Phones: full width at the photo's real ratio, fading into the black. */
 @utility hero-overlay-media {
+  flex: none;
   width: 100%;
-  height: min(70vh, 40rem);
-  min-height: 28rem;
-  object-fit: cover;
-  object-position: 50% 30%;
+  height: auto;
+  -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent);
+  mask-image: linear-gradient(to bottom, black 75%, transparent);
 
   @media (min-width: 48rem) {
     height: 100%;
-    min-height: 0;
+    object-fit: cover;
+    object-position: 50% 30%;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/*
+ * Decorative + and - marks drifting around the phone hero. Position comes from
+ * --fx / --fy (percent of the section); --fdur / --fdelay stagger the drift.
+ */
+@utility hero-float {
+  position: absolute;
+  left: var(--fx);
+  top: var(--fy);
+  z-index: 0;
+  font-family: var(--font-accent);
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0.55;
+  pointer-events: none;
+  animation: hero-float var(--fdur, 7s) ease-in-out var(--fdelay, 0s) infinite alternate;
+
+  @media (min-width: 48rem) {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes hero-float {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(8px, -12px, 0);
   }
 }
 

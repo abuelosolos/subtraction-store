@@ -24,7 +24,10 @@ export function CategoryRails({
     <div className="flex flex-col gap-14">
       {groups.map((group) => {
         const headingId = `rail-${group.slug}`;
-        const href = `/categories/${group.slug}${gender ? `?gender=${gender}` : ""}`;
+        // The catch-all men/women categories share their slug with the gender
+        // landing pages, so a gender param opens the filterable grid instead.
+        const linkGender = gender ?? (group.slug === "men" || group.slug === "women" ? group.slug : null);
+        const href = `/categories/${group.slug}${linkGender ? `?gender=${linkGender}` : ""}`;
         return (
           <section key={group.slug} aria-labelledby={headingId}>
             <div className="mb-6 flex items-end justify-between gap-6">

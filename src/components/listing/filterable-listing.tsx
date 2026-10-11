@@ -2,13 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CategoryRails, type CategoryGroup } from "@/components/listing/category-rails";
 import { FilterGroups } from "@/components/listing/filter-groups";
 import { ProductListing, type Crumb } from "@/components/product-listing";
+import { CloseIcon } from "@/components/ui/icons";
 import type { Product } from "@/lib/catalog";
 import {
   EMPTY_FILTERS,
-  FILTER_KEYS,
   activeFilterCount,
   applyFilters,
   buildFacets,
@@ -29,7 +28,6 @@ export function FilterableListing({
   products,
   categoryName,
   presetGender,
-  categoryOrder,
   initialFilters,
   baseCrumbs,
   subtitle,
@@ -41,8 +39,6 @@ export function FilterableListing({
   categoryName: string | null;
   /** Gender views preselect a gender; an emptied gender filter is written as `gender=any`. */
   presetGender: "men" | "women" | null;
-  /** Category slugs in display order (sort_order); sets the section order on gender views. */
-  categoryOrder: string[];
   initialFilters: Filters;
   baseCrumbs: Crumb[];
   subtitle: string;
@@ -61,25 +57,6 @@ export function FilterableListing({
       : categoryName;
   const title = listingTitle(selectedCategoryName, filters.gender);
 
-  // Gender views start as category sections; any other filter switches to the grid.
-  const sectionsMode =
-    presetGender !== null &&
-    FILTER_KEYS.every((key) => key === "gender" || filters[key].length === 0);
-  const sections: CategoryGroup[] = useMemo(() => {
-    if (!sectionsMode) return [];
-    const bySlug = new Map<string, CategoryGroup>();
-    for (const p of visible) {
-      const g = bySlug.get(p.categorySlug) ?? { slug: p.categorySlug, name: p.category, products: [] };
-      g.products.push(p);
-      bySlug.set(p.categorySlug, g);
-    }
-    // The men/women catch-all categories go last, the rest follow sort_order.
-    const rank = (slug: string) => {
-      const i = categoryOrder.indexOf(slug);
-      return (slug === "men" || slug === "women" ? 1000 : 0) + (i === -1 ? 500 : i);
-    };
-    return [...bySlug.values()].sort((a, b) => rank(a.slug) - rank(b.slug));
-  }, [sectionsMode, visible, categoryOrder]);
   // The gender a gender view starts with is not "a filter the user applied".
   const presetOnly =
     presetGender !== null && filters.gender.length === 1 && filters.gender[0] === presetGender;
@@ -126,11 +103,6 @@ export function FilterableListing({
         crumbs={[...baseCrumbs, { label: title }]}
         products={visible}
         emptyMessage={emptyMessage}
-        content={
-          sectionsMode && sections.length > 0 ? (
-            <CategoryRails groups={sections} gender={filters.gender.length === 1 ? (filters.gender[0] as "men" | "women") : null} />
-          ) : undefined
-        }
         empty={
           products.length > 0 && active > 0 ? (
             <div className="py-16 text-body">
@@ -179,8 +151,8 @@ export function FilterableListing({
       >
         <div className="flex items-center justify-between px-6 py-4">
           <h2 className="text-body font-semibold">Filter</h2>
-          <button type="button" onClick={() => setDrawerOpen(false)} className="text-caption underline underline-offset-4">
-            Close
+          <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close filters" className="inline-flex size-11 items-center justify-center">
+            <CloseIcon />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-6">

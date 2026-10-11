@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { recheckPaymentAction, updateFulfilmentAction } from "@/app/admin/orders/actions";
+import { Notice } from "@/components/admin/notice";
 import { FULFILMENT_STEPS, fulfilmentLabel } from "@/lib/order-labels";
 
 type Status = { kind: "ok" | "error"; text: string } | null;
@@ -66,7 +67,7 @@ export function FulfilmentForm({
   }
 
   const fieldError = (name: string) =>
-    errors[name] ? <p id={`${name}-error`} role="alert" className="mt-1 text-caption font-semibold">{errors[name]}</p> : null;
+    errors[name] ? <p id={`${name}-error`} role="alert" className="mt-1 text-caption font-semibold text-[var(--admin-bad)]">{errors[name]}</p> : null;
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
@@ -96,9 +97,11 @@ export function FulfilmentForm({
         <p className="mt-1 text-caption text-subtle">Only staff see this.</p>
         {fieldError("notes")}
       </div>
-      <p role={result?.kind === "error" ? "alert" : "status"} className="min-h-[1.5em] text-body font-semibold">
-        {result?.text}
-      </p>
+      {result ? (
+        <Notice tone={result.kind === "ok" ? "ok" : "bad"} role={result.kind === "error" ? "alert" : "status"}>
+          {result.text}
+        </Notice>
+      ) : null}
       <div>
         <button type="submit" disabled={pending} className="btn btn-inverse btn-lg">
           {pending ? "Saving" : "Save fulfilment"}
@@ -138,9 +141,11 @@ export function RecheckPayment({ orderId }: { orderId: string }) {
           {pending ? "Checking with Paystack" : "Re-check payment with Paystack"}
         </button>
       </div>
-      <p role={result?.kind === "error" ? "alert" : "status"} className="min-h-[1.5em] text-body font-semibold">
-        {result?.text}
-      </p>
+      {result ? (
+        <Notice tone={result.kind === "ok" ? "ok" : "bad"} role={result.kind === "error" ? "alert" : "status"}>
+          {result.text}
+        </Notice>
+      ) : null}
     </div>
   );
 }

@@ -1,11 +1,9 @@
-/** Monochrome status chip: border + uppercase text (no colour, per the design system). */
-export function StatusBadge({ children, strong }: { children: string; strong?: boolean }) {
+export type Tone = "ok" | "warn" | "bad" | "neutral";
+
+/** Status tag: a dot plus the word in a muted tone (never colour alone). */
+export function StatusBadge({ children, tone = "neutral" }: { children: string; tone?: Tone }) {
   return (
-    <span
-      className={`inline-block border px-2 py-0.5 text-caption font-medium uppercase ${
-        strong ? "border-ink text-ink" : "border-line/60 text-muted"
-      }`}
-    >
+    <span className="admin-tag" data-tone={tone}>
       {children}
     </span>
   );

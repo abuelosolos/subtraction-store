@@ -7,6 +7,7 @@ import {
   applyFilters,
   buildFacets,
   compareSizes,
+  groupByCategory,
   listingTitle,
   parseFilters,
   serializeFilters,
@@ -200,5 +201,19 @@ describe("contextual sizes", () => {
     ];
     const facet = buildFacets(shop, f({ category: ["footwear"], size: ["S"] })).find((x) => x.key === "size")!;
     expect(facet.options.map((o) => o.value)).toEqual(["40", "S"]);
+  });
+});
+
+describe("groupByCategory", () => {
+  it("orders groups by sort order with the men/women catch-alls last", () => {
+    const shop = [
+      p({ slug: "misc", category: "Men", categorySlug: "men" }),
+      p({ slug: "tee", category: "T-shirts", categorySlug: "t-shirts" }),
+      p({ slug: "boot", category: "Footwear", categorySlug: "footwear" }),
+      p({ slug: "boot2", category: "Footwear", categorySlug: "footwear" }),
+    ];
+    const groups = groupByCategory(shop, ["footwear", "t-shirts", "men"]);
+    expect(groups.map((g) => g.slug)).toEqual(["footwear", "t-shirts", "men"]);
+    expect(groups[0].products.map((x) => x.slug)).toEqual(["boot", "boot2"]);
   });
 });

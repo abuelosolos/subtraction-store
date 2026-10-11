@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
 import { addToCart } from "@/lib/cart-store";
 import { toggleSaved, useSaved } from "@/lib/saved-store";
@@ -20,6 +20,30 @@ export function ProductActions({
 }) {
   const saved = useSaved().includes(slug);
   const [message, setMessage] = useState<{ text: string; cartLink: boolean } | null>(null);
+  const formId = useId();
+  const mainButtonRef = useRef<HTMLButtonElement>(null);
+  // Start "in view" so the bar never flashes on first paint; the observers
+  // report the real state right after hydration.
+  const [mainInView, setMainInView] = useState(true);
+  const [footerInView, setFooterInView] = useState(false);
+
+  // The pinned bar shows only while the real Add to cart button is off screen
+  // (and not over the footer).
+  useEffect(() => {
+    const main = mainButtonRef.current;
+    if (!main) return;
+    const mainObserver = new IntersectionObserver(([entry]) => setMainInView(entry.isIntersecting));
+    mainObserver.observe(main);
+    const footer = document.querySelector("footer");
+    const footerObserver = new IntersectionObserver(([entry]) => setFooterInView(entry.isIntersecting));
+    if (footer) footerObserver.observe(footer);
+    return () => {
+      mainObserver.disconnect();
+      footerObserver.disconnect();
+    };
+  }, []);
+
+  const showBar = !soldOut && !mainInView && !footerInView;
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,7 +61,8 @@ export function ProductActions({
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-6" aria-label="Add to cart">
+    <>
+    <form id={formId} onSubmit={onSubmit} className="mt-8 flex flex-col gap-6" aria-label="Add to cart">
       {sizes.length > 0 ? (
         <fieldset disabled={soldOut} className="min-w-0">
           <legend className="mb-3 flex w-full items-center justify-between text-body font-semibold">
@@ -67,7 +92,7 @@ export function ProductActions({
       ) : null}
 
       <div className="flex flex-col gap-3">
-        <button type="submit" disabled={soldOut} className="btn btn-inverse btn-lg btn-block">
+        <button ref={mainButtonRef} type="submit" disabled={soldOut} className="btn btn-inverse btn-lg btn-block">
           {soldOut ? "Sold out" : "Add to cart"}
         </button>
         <button
@@ -86,5 +111,25 @@ export function ProductActions({
         </p>
       </div>
     </form>
+
+    {showBar ? (
+      // Second Add to cart, pinned to the bottom; submits the same form.
+      <div className="surface-dark fixed inset-x-0 bottom-0 z-40 border-t border-line/30 pb-[env(safe-area-inset-bottom)]">
+        <div className="container-page flex flex-col gap-2 py-3">
+          {message ? (
+            <p aria-hidden="true" className="text-caption">
+              {message.text}{" "}
+              {message.cartLink ? (
+                <Link href="/cart" className="underline underline-offset-4">View cart</Link>
+              ) : null}
+            </p>
+          ) : null}
+          <button type="submit" form={formId} className="btn btn-inverse btn-lg btn-block">
+            Add to cart
+          </button>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }

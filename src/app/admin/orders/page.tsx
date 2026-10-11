@@ -2,8 +2,11 @@ import Link from "next/link";
 
 import { AdminGate } from "@/components/admin/admin-gate";
 import { DataTable } from "@/components/admin/data-table";
+import { FilterTabs } from "@/components/admin/filter-tabs";
 import { AdminPage } from "@/components/admin/page-frame";
+import { Pagination } from "@/components/admin/pagination";
 import { StatusBadge } from "@/components/admin/status-badge";
+import { fulfilmentTone, orderTone } from "@/components/admin/tones";
 import { db } from "@/db";
 import {
   listAdminOrders,
@@ -24,6 +27,13 @@ export default function AdminOrdersPage({ searchParams }: PageProps<"/admin/orde
 
 const STATUS_OPTIONS = ["pending", "paid", "expired", "failed", "payment_mismatch", "refunded"] as const;
 
+const QUICK_TABS: { label: string; status?: AdminOrderFilters["status"] }[] = [
+  { label: "All" },
+  { label: "Awaiting payment", status: "pending" },
+  { label: "Paid", status: "paid" },
+  { label: "Under review", status: "payment_mismatch" },
+];
+
 async function Orders({ searchParams }: { searchParams: PageProps<"/admin/orders">["searchParams"] }) {
   const filters = parseOrderFilters(await searchParams);
   const { rows, total, pageSize } = await listAdminOrders(db, filters);
@@ -40,12 +50,23 @@ async function Orders({ searchParams }: { searchParams: PageProps<"/admin/orders
     return `/admin/orders${s ? `?${s}` : ""}`;
   };
 
+  const filtered = Boolean(filters.status || filters.fulfilment || filters.q);
+
   return (
     <div className="flex flex-col gap-6">
-      <form method="get" className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem_12rem_auto] sm:items-end">
+      <FilterTabs
+        label="Order status"
+        tabs={QUICK_TABS.map((t) => ({
+          label: t.label,
+          href: href({ status: t.status, page: 1 }),
+          active: filters.status === t.status,
+        }))}
+      />
+
+      <form method="get" className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem_11rem_auto] sm:items-end">
         <div>
           <label htmlFor="q" className="field-label">Search</label>
-          <input id="q" name="q" className="field" defaultValue={filters.q ?? ""} placeholder="Email, name or order id" maxLength={100} />
+          <input id="q" name="q" type="search" className="field" defaultValue={filters.q ?? ""} placeholder="Email, name or order id" maxLength={100} />
         </div>
         <div>
           <label htmlFor="status" className="field-label">Status</label>
@@ -65,7 +86,10 @@ async function Orders({ searchParams }: { searchParams: PageProps<"/admin/orders
             ))}
           </select>
         </div>
-        <button type="submit" className="btn btn-inverse btn-lg">Filter</button>
+        <div className="flex gap-2">
+          <button type="submit" className="btn btn-inverse btn-lg">Filter</button>
+          {filtered ? <Link href="/admin/orders" className="btn btn-outline btn-lg">Reset</Link> : null}
+        </div>
       </form>
 
       <p role="status" className="text-body text-muted">
@@ -81,7 +105,7 @@ async function Orders({ searchParams }: { searchParams: PageProps<"/admin/orders
           {
             header: "Order",
             cell: (o) => (
-              <Link href={`/admin/orders/${o.id}`} className="font-semibold underline underline-offset-4">
+              <Link href={`/admin/orders/${o.id}`} className="hover:underline">
                 #{o.id.slice(0, 8).toUpperCase()}
               </Link>
             ),
@@ -90,9 +114,9 @@ async function Orders({ searchParams }: { searchParams: PageProps<"/admin/orders
           {
             header: "Customer",
             cell: (o) => (
-              <span>
+              <span className="min-w-0">
                 <span className="block">{o.customerName}</span>
-                <span className="block text-muted">{o.email}</span>
+                <span className="block break-all text-caption text-muted">{o.email}</span>
               </span>
             ),
           },
@@ -100,30 +124,25 @@ async function Orders({ searchParams }: { searchParams: PageProps<"/admin/orders
           {
             header: "Status",
             cell: (o) => (
-              <StatusBadge strong={o.status === "payment_mismatch"}>
-                {orderStatusLabel[o.status] ?? o.status}
-              </StatusBadge>
+              <StatusBadge tone={orderTone(o.status)}>{orderStatusLabel[o.status] ?? o.status}</StatusBadge>
             ),
           },
           {
             header: "Fulfilment",
-            cell: (o) => (o.status === "paid" ? (fulfilmentLabel[o.fulfilmentStatus] ?? o.fulfilmentStatus) : "—"),
+            cell: (o) =>
+              o.status === "paid" ? (
+                <StatusBadge tone={fulfilmentTone(o.fulfilmentStatus)}>
+                  {fulfilmentLabel[o.fulfilmentStatus] ?? o.fulfilmentStatus}
+                </StatusBadge>
+              ) : (
+                <span className="text-muted">—</span>
+              ),
           },
           { header: "Total", numeric: true, cell: (o) => formatPrice(o.totalKobo, o.currency) },
         ]}
       />
 
-      {pages > 1 ? (
-        <nav aria-label="Pagination" className="flex items-center justify-between text-body">
-          {filters.page > 1 ? (
-            <Link href={href({ page: filters.page - 1 })} className="underline underline-offset-4">Previous</Link>
-          ) : <span />}
-          <span className="text-muted">Page {filters.page} of {pages}</span>
-          {filters.page < pages ? (
-            <Link href={href({ page: filters.page + 1 })} className="underline underline-offset-4">Next</Link>
-          ) : <span />}
-        </nav>
-      ) : null}
+      <Pagination page={filters.page} pages={pages} total={total} pageSize={pageSize} hrefFor={(p) => href({ page: p })} />
     </div>
   );
 }
