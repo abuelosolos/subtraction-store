@@ -1,18 +1,21 @@
 import { headers } from "next/headers";
 
 /**
- * Public base URL used for the Paystack callback. Production must set APP_URL;
- * in development we fall back to the request host so `next dev` works.
+ * Public base URL used for the Paystack callback. APP_URL wins when set
+ * (production); otherwise the request host is used so `next dev` and Vercel
+ * preview deployments send customers back to the deployment they paid on.
  */
 export async function appUrl(): Promise<string> {
   const configured = process.env.APP_URL?.replace(/\/+$/, "");
   if (configured) return configured;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("APP_URL is not set");
-  }
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  if (!host) throw new Error("Cannot determine app URL; set APP_URL");
-  return `${proto}://${host}`;
+  if (host) {
+    const proto =
+      h.get("x-forwarded-proto") ??
+      (process.env.NODE_ENV === "production" ? "https" : "http");
+    return `${proto}://${host}`;
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  throw new Error("Cannot determine app URL; set APP_URL");
 }
