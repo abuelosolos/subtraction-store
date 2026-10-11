@@ -1,22 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { NavbarProfileMenu } from "@/components/navbar-profile-menu";
+import { NavbarSearch } from "@/components/navbar-search";
 import { authClient } from "@/lib/auth-client";
 import { cartCount, useCart } from "@/lib/cart-store";
 
 const links = [
   { label: "New arrivals", href: "/new-arrivals" },
-  { label: "Mens", href: "#" },
-  { label: "Womens", href: "#" },
+  { label: "Mens", href: "/categories/men" },
+  { label: "Womens", href: "/categories/women" },
 ];
 
 const actions = [
   {
     label: "Search",
-    secondary: true,
     icon: (
       <>
         <circle cx="11" cy="11" r="6.5" />
@@ -61,6 +61,8 @@ const actions = [
  */
 export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" }) {
   const [scrolledPast, setScrolledPast] = useState(false);
+  // True once the page has moved a little; the hero bar turns to glass.
+  const [moved, setMoved] = useState(false);
   // Client-side session read, so the navbar never blocks the static shell.
   const { data: session } = authClient.useSession();
   const signedIn = Boolean(session?.user);
@@ -69,18 +71,27 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
   useEffect(() => {
     const hero = variant === "auto" ? document.getElementById("hero") : null;
     if (!hero) return;
+    // The bar's height comes from --navbar-height (56px phones, 61px from md).
+    const bar = document.querySelector(".navbar")?.getBoundingClientRect().height ?? 61;
     const observer = new IntersectionObserver(
       ([entry]) => setScrolledPast(!entry.isIntersecting),
-      { rootMargin: "-61px 0px 0px 0px" },
+      { rootMargin: `-${Math.round(bar)}px 0px 0px 0px` },
     );
     observer.observe(hero);
     return () => observer.disconnect();
   }, [variant]);
 
+  useEffect(() => {
+    const onScroll = () => setMoved(window.scrollY > 4);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const state = variant === "solid" || scrolledPast ? "solid" : "hero";
 
   return (
-    <header className="navbar" data-navbar={state}>
+    <header className="navbar" data-navbar={state} data-scrolled={moved}>
       <div className="mx-auto flex w-full max-w-frame items-center justify-between">
         <div className="flex items-center gap-[60px]">
           <Link href="/" className="font-brand text-brand font-bold">
@@ -103,7 +114,7 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
             const accessibleLabel = count > 0 ? `${text}, ${count} ${count === 1 ? "item" : "items"}` : text;
             const content = (
               <>
-                <span className="flex rounded-pill p-[5px]">
+                <span className="flex rounded-pill p-[5px] max-md:p-[11.5px]">
                   <svg
                     width="21"
                     height="21"
@@ -127,8 +138,20 @@ export function SiteNavbar({ variant = "auto" }: { variant?: "auto" | "solid" })
             const className = "flex items-center gap-[3px] px-[5px]";
             return (
               <li key={label} className={secondary ? "hidden sm:block" : undefined}>
-                {accountMenu ? (
-                  <NavbarProfileMenu name={session.user.name} email={session.user.email}>
+                {label === "Search" ? (
+                  // usePathname is dynamic on routes like /orders/[id]; the fallback is
+                  // the same icon, inert, until the component hydrates.
+                  <Suspense
+                    fallback={
+                      <button type="button" aria-label="Search" disabled className={className}>
+                        {content}
+                      </button>
+                    }
+                  >
+                    <NavbarSearch>{content}</NavbarSearch>
+                  </Suspense>
+                ) : accountMenu ? (
+                  <NavbarProfileMenu name={session.user.name} email={session.user.email} isAdmin={session.user.role === "admin"}>
                     {content}
                   </NavbarProfileMenu>
                 ) : (

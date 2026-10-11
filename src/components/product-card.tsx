@@ -25,7 +25,7 @@ export function ProductCard({ product, sizes, priority = false }: { product: Pro
             </span>
           ) : null}
         </div>
-        <div className="mt-3 flex items-start justify-between gap-4">
+        <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div>
             <h3 className="text-body font-semibold">{name}</h3>
             <p className="text-body text-muted">{category}</p>

@@ -6,6 +6,7 @@ import type { Db } from "@/lib/order-lifecycle";
 export type AccountOrder = {
   id: string;
   status: string;
+  fulfilmentStatus: string;
   currency: string;
   totalKobo: number;
   itemCount: number;
@@ -25,6 +26,7 @@ export async function getOrdersForUser(
     .select({
       id: orders.id,
       status: orders.status,
+      fulfilmentStatus: orders.fulfilmentStatus,
       currency: orders.currency,
       totalKobo: orders.totalKobo,
       createdAt: orders.createdAt,

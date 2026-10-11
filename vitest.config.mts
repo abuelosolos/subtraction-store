@@ -9,5 +9,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // DB-backed tests make several HTTP round trips to Neon.
+    testTimeout: 30_000,
   },
 });

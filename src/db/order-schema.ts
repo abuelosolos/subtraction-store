@@ -35,6 +35,14 @@ export const paymentStatus = pgEnum("payment_status", [
   "mismatch",
 ]);
 
+/** Shipping progress, independent of payment. Only meaningful once `paid`. */
+export const fulfilmentStatus = pgEnum("fulfilment_status", [
+  "unfulfilled",
+  "packed",
+  "shipped",
+  "delivered",
+]);
+
 export const orders = pgTable(
   "orders",
   {
@@ -57,10 +65,22 @@ export const orders = pgTable(
     paidAt: timestamp("paid_at", { withTimezone: true }),
     /** Claimed (set) before sending; cleared if the send fails. */
     confirmationEmailSentAt: timestamp("confirmation_email_sent_at", { withTimezone: true }),
+    fulfilmentStatus: fulfilmentStatus("fulfilment_status").notNull().default("unfulfilled"),
+    trackingCarrier: text("tracking_carrier"),
+    trackingNumber: text("tracking_number"),
+    shippedAt: timestamp("shipped_at", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    /** Internal staff notes; never shown to the customer. */
+    adminNotes: text("admin_notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    check(
+      "orders_fulfilment_requires_paid",
+      sql`${t.fulfilmentStatus} = 'unfulfilled' or ${t.status} = 'paid'`,
+    ),
+    index("orders_created_at_idx").on(t.createdAt.desc()),
     check("orders_amounts_nonneg", sql`${t.subtotalKobo} >= 0 and ${t.shippingKobo} >= 0`),
     check("orders_total_matches", sql`${t.totalKobo} = ${t.subtotalKobo} + ${t.shippingKobo}`),
     index("orders_status_expires_at_idx").on(t.status, t.expiresAt),

@@ -1,0 +1,149 @@
+/*
+ * Listing filters (category and gender views). Nike-style: a left column of
+ * disclosure groups, each opened by a plus that turns into a minus. Below lg
+ * the same groups live in a native <dialog> that slides in from the left.
+ * Tokens only; borders are the existing 0.3px hairline.
+ */
+@layer components {
+  .filter-group {
+    border-bottom: var(--border-width-hairline) solid var(--line);
+  }
+
+  .filter-group:first-of-type {
+    border-top: var(--border-width-hairline) solid var(--line);
+  }
+
+  .filter-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 3.25rem;
+    text-align: left;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: 600;
+  }
+
+  .filter-plus {
+    flex-shrink: 0;
+  }
+
+  .filter-plus-v {
+    transform-origin: center;
+    transition: transform var(--duration-standard) var(--ease-standard);
+  }
+
+  .filter-trigger[aria-expanded="true"] .filter-plus-v {
+    transform: scaleY(0);
+  }
+
+  .filter-panel {
+    padding-bottom: 1rem;
+  }
+
+  .filter-panel[hidden] {
+    display: none;
+  }
+
+  .filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.25rem;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    cursor: pointer;
+  }
+
+  .filter-option[data-empty="true"] {
+    color: var(--subtle);
+  }
+
+  .filter-count {
+    margin-left: auto;
+    color: var(--muted);
+  }
+
+  .filter-sizes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .filter-size {
+    min-height: 2.75rem;
+    border: var(--border-width-hairline) solid var(--line);
+    border-radius: var(--radius-field);
+    font-size: var(--text-body);
+    transition:
+      border-color var(--duration-standard) var(--ease-standard),
+      background-color var(--duration-standard) var(--ease-standard),
+      color var(--duration-standard) var(--ease-standard);
+  }
+
+  .filter-size:hover {
+    border-color: var(--ink);
+  }
+
+  .filter-size[aria-pressed="true"] {
+    border-color: var(--ink);
+    background-color: var(--ink);
+    color: var(--surface);
+  }
+
+  .filter-size[data-empty="true"] {
+    color: var(--subtle);
+  }
+
+  /* Mobile drawer: a native modal <dialog> gives focus trap + Escape. */
+  .filter-drawer {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(22rem, 90vw);
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: var(--color-surface-dark);
+    color: var(--color-ink-on-dark);
+  }
+
+  .filter-drawer:not([open]) {
+    display: none;
+  }
+
+  .filter-drawer[open] {
+    display: flex;
+    flex-direction: column;
+    animation: filter-drawer-in var(--duration-standard) var(--ease-standard);
+  }
+
+  .filter-drawer::backdrop {
+    background-color: var(--color-overlay-panel);
+  }
+
+  @keyframes filter-drawer-in {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+}
+
+/* Phones: 44px tap targets inside the filters. */
+@layer components {
+  @media (max-width: 47.99rem) {
+    .filter-option {
+      min-height: 2.75rem;
+    }
+
+    .filter-size {
+      min-height: 2.75rem;
+    }
+  }
+}

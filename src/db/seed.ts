@@ -2,7 +2,6 @@
 // Data was lifted from the former in-memory sample catalogue (src/lib/catalog.ts).
 // Existing stock quantities are never overwritten, so re-seeding is safe.
 import { config } from "dotenv";
-import { sql } from "drizzle-orm";
 
 type Img = { src: string; width: number; height: number; alt: string };
 
@@ -112,23 +111,13 @@ async function main() {
         showOnHome: c.showOnHome,
       })),
     )
-    .onConflictDoUpdate({
-      target: categories.slug,
-      set: {
-        name: sql`excluded.name`,
-        imageSrc: sql`excluded.image_src`,
-        imageWidth: sql`excluded.image_width`,
-        imageHeight: sql`excluded.image_height`,
-        imageAlt: sql`excluded.image_alt`,
-        sortOrder: sql`excluded.sort_order`,
-        showOnHome: sql`excluded.show_on_home`,
-      },
-    });
+    // Insert-only: never overwrite what an admin has edited.
+    .onConflictDoNothing({ target: categories.slug });
 
   const categoryRows = await db.select({ id: categories.id, slug: categories.slug }).from(categories);
   const categoryId = new Map(categoryRows.map((c) => [c.slug, c.id]));
 
-  const insertedProducts = await db
+  await db
     .insert(products)
     .values(
       dated.map(({ product: p, createdAt, isBestSeller }) => {
@@ -152,26 +141,10 @@ async function main() {
         };
       }),
     )
-    .onConflictDoUpdate({
-      target: products.slug,
-      set: {
-        name: sql`excluded.name`,
-        description: sql`excluded.description`,
-        categoryId: sql`excluded.category_id`,
-        priceCents: sql`excluded.price_cents`,
-        currency: sql`excluded.currency`,
-        badge: sql`excluded.badge`,
-        imageSrc: sql`excluded.image_src`,
-        imageWidth: sql`excluded.image_width`,
-        imageHeight: sql`excluded.image_height`,
-        imageAlt: sql`excluded.image_alt`,
-        sizes: sql`excluded.sizes`,
-        isBestSeller: sql`excluded.is_best_seller`,
-        createdAt: sql`excluded.created_at`,
-        updatedAt: sql`now()`,
-      },
-    })
-    .returning({ id: products.id, slug: products.slug });
+    // Insert-only: never overwrite what an admin has edited or archived.
+    .onConflictDoNothing({ target: products.slug });
+
+  const insertedProducts = await db.select({ id: products.id, slug: products.slug }).from(products);
 
   const stockBySlug = new Map(dated.map(({ product }) => [product.slug, product.stock]));
   await db

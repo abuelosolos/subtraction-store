@@ -5,10 +5,14 @@ import {
   check,
   index,
   integer,
+  pgEnum,
   pgTable,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
+
+/** Who a product is for. `unisex` shows under both Men's and Women's. */
+export const productGender = pgEnum("product_gender", ["men", "women", "unisex"]);
 
 export const categories = pgTable("categories", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -44,6 +48,12 @@ export const products = pgTable(
     /** Display-only size labels; empty means one size. Not variants. */
     sizes: text().array().notNull().default(sql`'{}'::text[]`),
     isBestSeller: boolean("is_best_seller").notNull().default(false),
+    gender: productGender().notNull().default("unisex"),
+    color: text().notNull().default("Black"),
+    /** Free-text collection label (e.g. "Core", "Winter 26"); null when none. */
+    collection: text(),
+    /** Soft delete: hidden from the shop and checkout, kept for order history. */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

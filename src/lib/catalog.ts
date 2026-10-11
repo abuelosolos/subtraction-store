@@ -3,6 +3,8 @@
 
 export type Image = { src: string; width: number; height: number; alt: string };
 
+export type Gender = "men" | "women" | "unisex";
+
 export type Product = {
   slug: string;
   name: string;
@@ -19,6 +21,10 @@ export type Product = {
   description: string;
   /** Empty means one size. */
   sizes: string[];
+  gender: Gender;
+  color: string;
+  /** Free-text collection label, when the product belongs to one. */
+  collection?: string;
 };
 
 export type HomeCategory = { label: string; href: string; image: Image };
