@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { ProductCard } from "@/components/product-card";
 import type { Product } from "@/lib/catalog";
@@ -13,6 +14,10 @@ export function ProductListing({
   crumbs,
   products,
   emptyMessage,
+  empty,
+  content,
+  sidebar,
+  toolbar,
 }: {
   id: string;
   title: string;
@@ -21,6 +26,14 @@ export function ProductListing({
   crumbs: Crumb[];
   products: Product[];
   emptyMessage: string;
+  /** Replaces the empty-state message (e.g. with a "clear filters" action). */
+  empty?: ReactNode;
+  /** Replaces the product grid (e.g. category sections on the gender views). */
+  content?: ReactNode;
+  /** Left column from md up (filters). */
+  sidebar?: ReactNode;
+  /** Shown beside the piece count (e.g. the mobile Filter button). */
+  toolbar?: ReactNode;
 }) {
   return (
     <>
@@ -46,28 +59,44 @@ export function ProductListing({
               <h1 id={id} className="text-heading-2 font-semibold">{title}</h1>
               <p className="mt-4 max-w-prose text-body text-muted">{subtitle}</p>
             </div>
-            {products.length > 0 ? (
-              <p className="text-body text-muted">
-                {products.length} {products.length === 1 ? "piece" : "pieces"}
-              </p>
-            ) : null}
+            <div className="flex items-center gap-4">
+              {products.length > 0 ? (
+                <p className="text-body text-muted">
+                  {products.length} {products.length === 1 ? "piece" : "pieces"}
+                </p>
+              ) : null}
+              {toolbar}
+            </div>
           </header>
 
-          {products.length > 0 ? (
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-4">
-              {products.map((product, index) => (
-                <li key={product.slug}>
-                  <ProductCard
-                    product={product}
-                    sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-                    priority={index < 4}
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="py-16 text-body text-muted">{emptyMessage}</p>
-          )}
+          <div className={sidebar ? "md:grid md:grid-cols-[14rem_minmax(0,1fr)] md:gap-8 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12" : undefined}>
+            {sidebar ? <aside aria-label="Filters" className="hidden md:block">{sidebar}</aside> : null}
+            <div>
+              {content ? (
+                content
+              ) : products.length > 0 ? (
+                <ul
+                  className={
+                    sidebar
+                      ? "grid grid-cols-2 gap-x-3 gap-y-10 lg:grid-cols-3 lg:gap-x-4 xl:grid-cols-4"
+                      : "grid grid-cols-2 gap-x-3 gap-y-10 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-4"
+                  }
+                >
+                  {products.map((product, index) => (
+                    <li key={product.slug}>
+                      <ProductCard
+                        product={product}
+                        sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+                        priority={index < 4}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                (empty ?? <p className="py-16 text-body text-muted">{emptyMessage}</p>)
+              )}
+            </div>
+          </div>
         </div>
       </section>
     </>

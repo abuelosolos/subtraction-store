@@ -36,6 +36,20 @@
       "when": 1791670914016,
       "tag": "0004_famous_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791673840756,
+      "tag": "0005_lying_betty_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791677753031,
+      "tag": "0006_magical_vulture",
+      "breakpoints": true
     }
   ]
 }

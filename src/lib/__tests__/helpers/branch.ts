@@ -27,7 +27,7 @@ if (testUrl && mainUrl && identity(testUrl) === identity(mainUrl)) {
   );
 }
 
-const { orders, orderItems, payments, products, stock, categories, user, addresses } = schema;
+const { orders, orderItems, payments, products, stock, categories, user, addresses, stockAdjustments, adminAudit } = schema;
 
 export function createBranchFixtures() {
   const run = randomUUID().slice(0, 8);
@@ -41,6 +41,12 @@ export function createBranchFixtures() {
     get db() {
       return db;
     },
+    get categoryId() {
+      return categoryId;
+    },
+    get slugPrefix() {
+      return slugPrefix;
+    },
 
     async setup() {
       db = drizzle(neon(testUrl!), { schema });
@@ -50,6 +56,12 @@ export function createBranchFixtures() {
       if (missing.rows.length === 0) {
         throw new Error("Test branch is missing migration 0003; migrate the branch.");
       }
+      const admin = await db.execute(
+        sql`select 1 from information_schema.columns where table_name = 'products' and column_name = 'archived_at'`,
+      );
+      if (admin.rows.length === 0) {
+        throw new Error("Test branch is missing migration 0005; migrate the branch.");
+      }
       const [c] = await db
         .insert(categories)
         .values({ slug: `${slugPrefix}-cat`, name: "Test category" })
@@ -57,9 +69,9 @@ export function createBranchFixtures() {
       categoryId = c.id;
     },
 
-    async makeUser(label = "u") {
+    async makeUser(label = "u", role: "user" | "admin" = "user") {
       const id = `${slugPrefix}-${label}-${randomUUID().slice(0, 6)}`;
-      await db.insert(user).values({ id, name: "Test", email: `${id}@example.com` });
+      await db.insert(user).values({ id, name: "Test", email: `${id}@example.com`, role });
       userIds.push(id);
       return id;
     },
@@ -164,6 +176,16 @@ export function createBranchFixtures() {
 
     async cleanup() {
       if (!db) return;
+      // Admin history references products and users with RESTRICT; clear it first.
+      await db.execute(sql`
+        delete from stock_adjustments
+        where product_id in (select id from products where slug like ${slugPrefix + "%"})
+      `);
+      if (userIds.length > 0) {
+        await db.delete(stockAdjustments).where(inArray(stockAdjustments.actorUserId, userIds));
+        await db.delete(adminAudit).where(inArray(adminAudit.actorUserId, userIds));
+      }
+      await db.delete(adminAudit).where(like(adminAudit.targetId, `${slugPrefix}%`));
       if (userIds.length > 0) {
         // payments restrict order deletion, so remove them first.
         const orderRows = await db

@@ -12,6 +12,8 @@ export const auth = betterAuth({
       // Contact number, E.164. `input: false` so clients cannot set it through
       // Better Auth's own endpoints; only the validated server action writes it.
       phone: { type: "string", required: false, input: false },
+      // "user" | "admin". Never client-settable; see scripts/make-admin.ts.
+      role: { type: "string", required: false, defaultValue: "user", input: false },
     },
   },
   // nextCookies must be the last plugin.

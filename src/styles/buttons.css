@@ -159,3 +159,13 @@
     width: 100%;
   }
 }
+
+/* Phones: 14px text and a 44px minimum height so buttons are easy to hit. */
+@layer components {
+  @media (max-width: 47.99rem) {
+    .btn {
+      min-height: 44px;
+      font-size: var(--text-body);
+    }
+  }
+}

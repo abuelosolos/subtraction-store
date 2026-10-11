@@ -9,8 +9,10 @@
  */
 
 :root {
-  --navbar-height: 61px;
-  --navbar-padding-y: 15px;
+  /* Phones: 56px bar with 44px tap targets. From md: Figma's 61px / 15px. */
+  --navbar-height: 56px;
+  --navbar-padding-y: 6px;
+  --navbar-content-height: calc(var(--navbar-height) - 2 * var(--navbar-padding-y));
   --navbar-transition: var(--duration-standard) var(--ease-standard);
 
   --navbar-hero-bg: transparent;
@@ -20,8 +22,18 @@
   --navbar-solid-bg: var(--color-surface-dark);
   --navbar-solid-ink: var(--color-ink-on-dark);
   --navbar-solid-link: var(--color-muted-on-dark);
-  /* Account menu fill follows the bar: light over the hero, dark when solid. */
-  --navbar-menu-hero-bg: var(--color-surface-light);
+  /*
+   * Glass over the hero: the light surface at partial opacity plus a blur, so
+   * the photograph shows through softly. Used by the bar once it has moved
+   * (or while Search / Profile is open), the profile dropdown and the search
+   * field. Back over dark sections the usual solid fills return.
+   */
+  --glass-bg: color-mix(in srgb, var(--color-surface-light) 55%, transparent);
+  --glass-bg-strong: color-mix(in srgb, var(--color-surface-light) 72%, transparent);
+  --glass-blur: blur(18px) saturate(1.4);
+
+  /* Account menu fill follows the bar: glass over the hero, dark when solid. */
+  --navbar-menu-hero-bg: var(--glass-bg-strong);
   --navbar-menu-hero-ink: var(--color-ink-on-light);
   --navbar-menu-hero-muted: var(--color-muted-on-light);
   --navbar-menu-hero-hover: var(--color-overlay-watermark);
@@ -31,18 +43,53 @@
   --navbar-menu-solid-hover: var(--color-overlay-ghost);
 }
 
+@media (min-width: 48rem) {
+  :root {
+    --navbar-height: 61px;
+    --navbar-padding-y: 15px;
+  }
+}
+
 @layer components {
   .navbar {
     position: fixed;
     inset: 0 0 auto 0;
     z-index: 50;
-    min-height: var(--navbar-height);
+    /* Fixed, not min-height: nothing inside may change the bar's height. */
+    height: var(--navbar-height);
     padding: var(--navbar-padding-y) var(--gutter);
     background-color: var(--navbar-bg);
     color: var(--navbar-ink);
     transition:
       background-color var(--navbar-transition),
       color var(--navbar-transition);
+  }
+
+  /*
+   * The glass layer is a pseudo-element, not backdrop-filter on the bar
+   * itself: a filter on the bar would become the containing block for the
+   * fixed-position menus inside it.
+   */
+  .navbar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--navbar-transition);
+  }
+
+  /* md and up only: below md the bar is always solid. */
+  @media (min-width: 48rem) {
+    .navbar[data-navbar="hero"][data-scrolled="true"]::before,
+    .navbar[data-navbar="hero"]:has(.navbar-profile[data-open="true"])::before,
+    .navbar[data-navbar="hero"]:has(.navbar-search[data-open="true"])::before {
+      opacity: 1;
+    }
   }
 
   .navbar,
@@ -127,6 +174,8 @@
     padding-block: 0.5rem;
     background-color: var(--navbar-menu-bg);
     color: var(--navbar-menu-ink);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
     transition:
       background-color var(--navbar-transition),
       color var(--navbar-transition);
@@ -160,6 +209,230 @@
       top: var(--navbar-height);
       right: 0;
       padding-top: 0;
+    }
+  }
+}
+
+/*
+ * Navbar search. The field grows to the LEFT of the icon (the bar's action
+ * list is right-aligned) and the whole control takes the light fill via the
+ * `.surface-light` class the component adds while open, so tokens flip for
+ * ink, muted text and focus rings. Results sit directly below, flush with the
+ * field's right edge, square-cornered and borderless like the profile menu.
+ */
+@layer components {
+  .navbar-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    transition:
+      background-color var(--navbar-transition),
+      color var(--navbar-transition);
+  }
+
+  .navbar-search-field {
+    height: var(--navbar-content-height);
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      width var(--navbar-transition),
+      opacity var(--navbar-transition);
+  }
+
+  .navbar-search[data-open="true"] .navbar-search-field {
+    width: min(18rem, 40vw);
+    opacity: 1;
+  }
+
+  .navbar-search-input {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0 0.5rem 0 0.75rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    text-transform: none;
+  }
+
+  .navbar-search-input::placeholder {
+    color: var(--muted);
+  }
+
+  .navbar-search-input:focus-visible {
+    outline: none;
+  }
+
+  .navbar-search-input::-webkit-search-cancel-button {
+    appearance: none;
+  }
+
+  .navbar-search-trigger {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding-inline: 5px;
+    transition: gap var(--navbar-transition);
+  }
+
+  /*
+   * The "Search" text label collapses (width and opacity) as the field grows,
+   * so the icon glides to the end of the fill instead of the label snapping
+   * away. Same duration and easing as the field's width.
+   */
+  .navbar-search-trigger > :not(:first-child) {
+    max-width: 6rem;
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 1;
+    transition:
+      max-width var(--navbar-transition),
+      opacity var(--navbar-transition);
+  }
+
+  .navbar-search[data-open="true"] .navbar-search-trigger {
+    gap: 0;
+  }
+
+  .navbar-search[data-open="true"] .navbar-search-trigger > :not(:first-child) {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  .navbar-search-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 60;
+    width: 100%;
+    min-width: 20rem;
+    max-height: min(70vh, 32rem);
+    overflow-y: auto;
+    background-color: var(--surface);
+    color: var(--ink);
+    text-align: left;
+    text-transform: none;
+  }
+
+  .navbar-search-panel[hidden] {
+    display: none;
+  }
+
+  .navbar-search-panel:not([hidden]) {
+    animation: navbar-search-panel-in var(--duration-standard) var(--ease-standard);
+  }
+
+  @keyframes navbar-search-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .navbar-search-message {
+    padding: 1rem;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    color: var(--muted);
+  }
+
+  .navbar-search-list {
+    padding-block: 0.5rem;
+  }
+
+  .navbar-search-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 56px;
+    padding: 0.5rem 1rem;
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    transition: background-color var(--navbar-transition);
+  }
+
+  .navbar-search-item[data-active="true"],
+  .navbar-search-item:hover {
+    background-color: var(--color-overlay-watermark);
+  }
+
+  .navbar-search-thumb {
+    width: 2.5rem;
+    height: 3.25rem;
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+
+  /* Below md the field is wide: let the panel span the viewport under the bar. */
+  @media (max-width: 47.99rem) {
+    .navbar-search[data-open="true"] .navbar-search-field {
+      width: min(12rem, 38vw);
+    }
+
+    .navbar-search-panel {
+      position: fixed;
+      top: var(--navbar-height);
+      right: 0;
+      left: 0;
+      width: auto;
+      min-width: 0;
+    }
+  }
+}
+
+/*
+ * Search over the hero: the field and results are glass (blur on pseudo
+ * layers so the fixed mobile panel is unaffected). Dark sections keep the
+ * solid light fill. md and up only; below md the bar is solid.
+ */
+@layer components {
+  .navbar-search {
+    isolation: isolate;
+  }
+
+  .navbar-search::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+    background-color: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    transition: opacity var(--navbar-transition);
+  }
+
+  @media (min-width: 48rem) {
+    .navbar[data-navbar="hero"] .navbar-search.surface-light {
+      background-color: transparent;
+    }
+
+    .navbar[data-navbar="hero"] .navbar-search[data-open="true"]::before {
+      opacity: 1;
+    }
+
+    .navbar[data-navbar="hero"] .navbar-search-panel {
+      background-color: var(--glass-bg-strong);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+    }
+  }
+}
+
+/* iOS zooms the page when a sub-16px field is focused. */
+@layer components {
+  @media (max-width: 47.99rem) {
+    .navbar-search-input {
+      font-size: 1rem;
     }
   }
 }

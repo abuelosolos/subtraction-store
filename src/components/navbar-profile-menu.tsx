@@ -22,10 +22,13 @@ const HOVER_CLOSE_DELAY_MS = 150;
 export function NavbarProfileMenu({
   name,
   email,
+  isAdmin = false,
   children,
 }: {
   name: string;
   email: string;
+  /** Display only: shows a link to /admin, which re-checks the role itself. */
+  isAdmin?: boolean;
   /** The trigger's icon and label, rendered by the navbar so styles match. */
   children: ReactNode;
 }) {
@@ -72,6 +75,7 @@ export function NavbarProfileMenu({
     <div
       ref={rootRef}
       className="navbar-profile"
+      data-open={open}
       onPointerEnter={(e) => {
         if (e.pointerType !== "mouse") return;
         openedByHover.current = true;
@@ -125,6 +129,11 @@ export function NavbarProfileMenu({
                 {label}
               </Link>
             ))}
+            {isAdmin ? (
+              <Link href="/admin" className="navbar-menu-item" onClick={hide}>
+                Admin
+              </Link>
+            ) : null}
           </nav>
           <div className="pt-1">
             <button

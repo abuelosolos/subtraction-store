@@ -1,3 +1,5 @@
+import { FooterColumn } from "@/components/footer-column";
+
 const columns = [
   { title: "Shop", links: ["New arrivals", "Men", "Women", "Outerwear", "Accessories"] },
   { title: "Help", links: ["Order status", "Shipping & delivery", "Returns", "Size guide", "Contact us"] },
@@ -7,26 +9,15 @@ const columns = [
 export function SiteFooter() {
   return (
     <footer className="surface-dark border-t border-line/30">
-      <div className="container-page grid gap-12 py-16 md:grid-cols-[1.5fr_repeat(3,1fr)]">
-        <div className="flex flex-col gap-4">
+      <div className="container-page grid gap-0 py-12 md:grid-cols-[1.5fr_repeat(3,1fr)] md:gap-12 md:py-16">
+        <div className="flex flex-col gap-4 max-md:mb-10">
           <p className="font-brand text-brand font-bold">SUBTRACTION.</p>
           <p className="max-w-[18rem] text-body text-muted">
             Premium black clothing. What happens when you take color away.
           </p>
         </div>
         {columns.map(({ title, links }) => (
-          <nav key={title} aria-label={title}>
-            <h2 className="mb-4 text-caption font-medium uppercase text-muted">{title}</h2>
-            <ul className="flex flex-col gap-3 text-body">
-              {links.map((label) => (
-                <li key={label}>
-                  <a href="#" className="hover:underline hover:underline-offset-4">
-                    {label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <FooterColumn key={title} title={title} links={links} />
         ))}
       </div>
       <div className="border-t border-line/30">

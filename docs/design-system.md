@@ -305,3 +305,89 @@ tracking.
 - **Navbar icon layer names** are all `Icons/ArrowUpRight` regardless of glyph; cosmetic, for
   the icon export.
 - **Mobile and tablet designs** do not exist; the rules above should get a design pass.
+
+## Admin area
+
+`/admin/*` is staff-only (role `admin`, set with `scripts/make-admin.ts`). It reuses the dark
+surface, `container-page`, `.field`, `.btn` and the account side-menu pattern (`SideNav` in
+`src/components/ui/side-nav.tsx`: left column from md, scrollable row below). The header is the
+solid `.navbar` bar with the wordmark, an "Admin" tag and "Back to shop"; no public navbar/footer.
+
+Primitives (`src/components/admin/`): `DataTable` (semantic `<table>`, hairline dividers,
+`hover:bg-ink/5`, `scope="col"`, `sr-only` caption, right-aligned numeric columns), `StatusBadge`
+(border + uppercase text, no colour; `strong` for items needing attention), `AdminPage` (title,
+actions, Suspense), `AdminGate` (real role check, render inside Suspense), `ImageField` (upload to
+Vercel Blob or an `/images/...` path, width/height/alt). Forms follow the account pattern:
+`noValidate`, `aria-invalid` + field error `role="alert"`, a `min-h-[1.5em]` status line, pending
+button label. Destructive actions use the inline "Confirm / Cancel" text buttons (no modal).
+Status text for orders and fulfilment lives in `src/lib/order-labels.ts`.
+
+## Navbar search
+
+The Search action is a button that opens a field growing to the LEFT of the icon (the bar's
+actions are right-aligned). While open the control gets `.surface-light` (light fill,
+`ink-on-light`, no border, square corners) regardless of hero/solid bar state, and the
+"Search" text label collapses (max-width and opacity, same duration/easing as the field's width) so the icon ends at the right of the fill. Results list in a panel directly below, flush with the field's right
+edge (full width under the bar below md), `max-h` about 70vh, scrolling. Nothing is listed until
+a character is typed. Rows: 40x52 thumbnail, name, category (with " · Sold out" when stock is 0),
+price; 56px tall; hover/active uses `--color-overlay-watermark`. Combobox semantics: input
+`role="combobox"` with `aria-activedescendant`, `role="listbox"` results, `role="status"` count
+announcement. The results panel fades in with a 4px downward slide. Matching ignores case,
+punctuation and spacing and accepts simple plurals. Escape, outside click, blur and navigation close it. Styles: `.navbar-search*` in
+`src/styles/navbar.css`; behaviour: `src/components/navbar-search.tsx`; matching:
+`src/lib/search.ts`; data: cached `getSearchIndex()` (archived products excluded).
+
+## Listing filters
+
+Category pages (`/categories/[slug]`) and the gender views (`/categories/men`, `/categories/women`)
+use `FilterableListing`. From md: a 14rem (15rem from lg) left column of disclosure groups (Size, Gender, Colour,
+Collection), each a full-width row with a plus icon that turns into a minus when open
+(`aria-expanded`), separated by hairline rules; groups holding a selection start open and show a
+count. Sizes are a 3-column grid of toggle buttons (`aria-pressed`); the rest are checkboxes with a
+live count. Below md the same groups sit in a native `<dialog>` that slides in from the left, with
+a "Show N pieces" button. Styles: `src/styles/listing-filters.css`; logic: `src/lib/product-filters.ts`.
+
+Behaviour: filters apply instantly and are mirrored in the URL as repeated params
+(`?gender=men&size=M&size=L`). OR within a group, AND across groups; a selected gender also shows
+unisex pieces. The heading follows the gender: "Men's Footwear" with only Men selected, "Footwear"
+with both or none; gender views read "Men's" / "Women's" and "All products" when both or none.
+`gender=any` on a gender view is the explicit cleared state. Groups with no values are hidden.
+
+Category group: the Category filter lists every category in the current listing (hidden on a
+single-category page). On the Men's / Women's views, with only gender selected, the grid is replaced
+by one scroll-snap rail per category in `sort_order` (the men/women catch-all categories last), each
+with a "View all" link to `/categories/[slug]?gender=...`; ticking any other filter switches back
+to the product grid. Choosing exactly one category names the page after it ("Men's Footwear").
+
+## Navbar glass (over the hero)
+
+From md up, while the bar is in its hero state, a frosted-glass layer fades in when the page has
+moved a few pixels, and while Search is open or the Profile menu is open (hover included). Glass is
+`--glass-bg` (light surface at 55%) or `--glass-bg-strong` (72%, for the dropdown and search
+results) with `--glass-blur`, defined in `src/styles/navbar.css`; no hex. The profile dropdown, the
+search field and its results are glass in this state. Crossing into the dark sections (`data-navbar="solid"`)
+restores the solid dark bar and solid light fills. The blur sits on pseudo-elements, never on the
+bar itself, so the fixed-position mobile menus keep their containing block. Below md the bar is
+always solid, so none of this applies.
+
+## Mobile scaling
+
+- **Navbar height** is one token: `--navbar-height` is 56px below md (6px vertical padding, 44px
+  content height) and 61px from md (15px padding, Figma). The bar uses `height`, not `min-height`,
+  and every page offset, sticky offset and fixed panel reads the same token, so they cannot drift.
+  Navbar icons are 44px tap targets on phones (drawn icon stays 21px).
+- **Headings are fluid**: `--text-heading-2` is `clamp(1.75rem, 1rem + 3vw, 2.5rem)` (28px at 375px,
+  40px from about 800px); `--text-heading-3` is `clamp(1.375rem, 1rem + 1.8vw, 1.75rem)`. Body 14px
+  and caption 12px do not change.
+- **Tap targets**: below md `.btn` is at least 44px tall with 14px text; filter options and size
+  toggles are 44px; form fields and the search input are 16px so iOS does not zoom on focus.
+- Product cards stack the price under the name below `sm`.
+
+## Footer link groups
+
+From md the Shop, Help and Company groups are plain columns with an uppercase caption heading. Below
+md each group is an accordion row (`FooterColumn`): a full-width 56px button with the title and a
+plus that turns into a minus when open (`PlusMinusIcon`, driven by `aria-expanded` through the
+`group` variant), hairline rules between rows, links at 44px tap height. Groups are independent
+(several can be open), start closed, and animate by row height; closed links are
+`visibility: hidden` so they leave the tab order. The brand block sits above the rows.

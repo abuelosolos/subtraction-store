@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, eq, isNull, sql } from "drizzle-orm";
 
 import { addresses, orderItems, orders, payments, products, stock } from "@/db/schema";
 import type { DeliveryDetails } from "@/lib/customer";
@@ -48,7 +48,7 @@ export async function loadPricedProducts(
     })
     .from(products)
     .leftJoin(stock, eq(stock.productId, products.id))
-    .where(sql`${products.slug} in ${slugs}`);
+    .where(and(sql`${products.slug} in ${slugs}`, isNull(products.archivedAt)));
   return new Map(rows.map((r) => [r.slug, { ...r, stock: Number(r.stock) }]));
 }
 

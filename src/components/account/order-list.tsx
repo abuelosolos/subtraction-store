@@ -2,14 +2,7 @@ import Link from "next/link";
 
 import type { AccountOrder } from "@/lib/account-orders";
 import { formatPrice } from "@/lib/catalog";
-
-const statusLabel: Record<string, string> = {
-  pending: "Awaiting payment",
-  paid: "Paid",
-  expired: "Expired",
-  payment_mismatch: "Under review",
-  refunded: "Refunded",
-};
+import { fulfilmentLabel, orderStatusLabel } from "@/lib/order-labels";
 
 export function OrderList({ orders }: { orders: AccountOrder[] }) {
   if (orders.length === 0) {
@@ -46,7 +39,7 @@ export function OrderList({ orders }: { orders: AccountOrder[] }) {
                 </span>
               </span>
               <span className="block text-body text-muted">
-                {order.itemCount} {order.itemCount === 1 ? "item" : "items"} · {statusLabel[order.status] ?? order.status}
+                {order.itemCount} {order.itemCount === 1 ? "item" : "items"} · {order.status === "paid" ? (fulfilmentLabel[order.fulfilmentStatus] ?? "Paid") : (orderStatusLabel[order.status] ?? order.status)}
               </span>
             </span>
             <span className="flex items-center gap-4 text-body font-medium">

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Initial scaffold only: Next.js (App Router) + TypeScript + Tailwind v4 + Better Auth + Drizzle ORM + Neon Postgres. No e-commerce features, schemas, UI, payments or deployment config exist yet.
+Next.js (App Router) + TypeScript + Tailwind v4 + Better Auth + Drizzle ORM + Neon Postgres. Storefront, cart/saved, Paystack checkout, orders, account area and an `/admin` back office (orders, products, categories, stock, fulfilment) exist. Not built: confirmation email, refunds, per-size stock.
 
 ## Design system
 
@@ -28,7 +28,7 @@ npm run db:push      # drizzle-kit push (sync schema directly, no migration file
 
 `drizzle-kit studio` is intentionally not exposed as a script: its local server has no authentication and allows any browser origin, so a web page could run SQL against the connected database (CWE-942). Inspect data with the Neon console or `psql` instead.
 
-No test runner is configured. Setup: `cp .env.example .env.local` and fill in `DATABASE_URL` (Neon) and `BETTER_AUTH_SECRET`.
+Tests: `npm test` (vitest). DB-backed tests run only when `TEST_DATABASE_URL` points at a Neon branch (they refuse the main database). Setup: `cp .env.example .env.local` and fill in `DATABASE_URL` (Neon) and `BETTER_AUTH_SECRET`.
 
 ## Next.js version caveat
 
@@ -53,7 +53,16 @@ Catalogue tables are `categories`, `products`, `stock` (`src/db/catalog-schema.t
 - **`products.sizes` is display-only** (`text[]`, empty = one size). Per-size stock needs real variants, which don't exist yet.
 - **Reads live in `src/lib/catalog-queries.ts`**, each with `"use cache"` + `cacheTag("catalog")` + `cacheLife`, all returning the shared `Product` type from `src/lib/catalog.ts` (which stays DB-free). After any write to catalogue or stock, invalidate the `catalog` tag.
 - **Migrations are versioned**: change the schema, then `db:generate`, review the SQL in `./drizzle`, then `db:migrate`. Don't use `db:push` against the shared database.
-- **`npm run db:seed` is idempotent** (upserts on slug) and never overwrites existing `stock.quantity`.
+- **`npm run db:seed` is idempotent and insert-only**: it never overwrites existing categories, products or stock, so admin edits and archives survive a reseed.
 - **Builds need `DATABASE_URL`** for the home and `/products/[slug]` routes, since cached queries and `generateStaticParams` hit the DB at build time.
 
 Better Auth's own tables (user/session/account/verification) are not defined yet. Generate them with `npx @better-auth/cli generate`, put them in/re-export from `src/db/schema.ts`, then run `db:generate` + `db:migrate`; the auth routes will not work until this is done.
+
+## Admin conventions
+
+- **Access**: `user.role` (`"user"` | `"admin"`, `input:false` so no client can set it). Grant with `npx tsx scripts/make-admin.ts <email>`. Every admin page wraps content in `<AdminGate>` (`requireAdmin`) inside `<Suspense>`; every admin server action and API route must call `getAdminUser()` itself (actions are public POST endpoints). Never put admin data in `"use cache"`.
+- **Data layer**: `src/lib/admin/*` takes `db` and the actor; actions are thin. Writes that need an audit row use a single-statement CTE (or one `db.batch`) so the change and its `admin_audit` / `stock_adjustments` row are atomic.
+- **Never hand-set** order `status` to paid/expired/failed/pending/payment_mismatch: only `confirmPayment` / `releaseOrder` move it. Admin sets `fulfilment_status` (only valid when paid, enforced by a CHECK) and can re-check a payment.
+- **Catalogue**: archive via `products.archived_at` (filtered in `catalog-queries.ts` and `loadPricedProducts`); slugs are immutable; a product and its stock row are created in one statement; call `invalidateCatalog()` after writes.
+- **Images**: client upload to Vercel Blob through `/api/admin/upload` (admin-checked token). Needs `BLOB_READ_WRITE_TOKEN`; existing `/images/...` paths remain valid.
+- **Stock**: relative adjustments only (`quantity + delta`), with history in `stock_adjustments`.

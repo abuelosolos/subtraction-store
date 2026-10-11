@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "../styles/buttons.css";
 @import "../styles/navbar.css";
+@import "../styles/listing-filters.css";
 
 /*
  * SUBTRACTION. design tokens. Reference: docs/design-system.md.
@@ -28,9 +29,9 @@
   --text-brand--line-height: 1.43;
   --text-display-sm: 1.25rem; /* 20: hero Bebas Neue headings */
   --text-display-sm--line-height: 1.1;
-  --text-heading-3: 1.75rem; /* 28: "Explore", auth title */
+  --text-heading-3: clamp(1.375rem, 1rem + 1.8vw, 1.75rem); /* 22 at phones to 28: "Explore", auth title */
   --text-heading-3--line-height: 1.1;
-  --text-heading-2: 2.5rem; /* 40: section headings */
+  --text-heading-2: clamp(1.75rem, 1rem + 3vw, 2.5rem); /* 28 at phones to 40 by ~800px: page and section headings */
   --text-heading-2--line-height: 1;
   --text-display-xl: 4rem; /* 64: hero watermark words */
   --text-display-xl--line-height: 0.9;
@@ -268,6 +269,18 @@
 
   .field:disabled {
     opacity: 0.5;
+  }
+
+  textarea.field {
+    min-height: 6rem;
+    resize: vertical;
+  }
+
+  /* iOS zooms the page when a sub-16px field is focused. */
+  @media (max-width: 47.99rem) {
+    .field {
+      font-size: 1rem;
+    }
   }
 }
 

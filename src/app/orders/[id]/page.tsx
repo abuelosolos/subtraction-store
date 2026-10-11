@@ -10,21 +10,13 @@ import { orderItems, orders } from "@/db/schema";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNavbar } from "@/components/site-navbar";
 import { formatPrice } from "@/lib/catalog";
+import { fulfilmentLabel, orderStatusLabel } from "@/lib/order-labels";
 import { countryName } from "@/lib/customer";
 import { getSessionUser } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Order | SUBTRACTION.",
   robots: { index: false },
-};
-
-const statusLabel: Record<string, string> = {
-  pending: "Awaiting payment",
-  paid: "Paid",
-  expired: "Expired",
-  failed: "Failed",
-  payment_mismatch: "Under review",
-  refunded: "Refunded",
 };
 
 export default function OrderPage({ params }: PageProps<"/orders/[id]">) {
@@ -70,8 +62,17 @@ async function OrderContent({ params }: { params: PageProps<"/orders/[id]">["par
         </Link>
         <h1 id="order-heading" className="text-heading-2 font-semibold">Order</h1>
         <p className="mt-2 text-body text-muted">
-          {statusLabel[order.status] ?? order.status} · placed {order.createdAt.toLocaleDateString("en-GB")}
+          {order.status === "paid"
+            ? (fulfilmentLabel[order.fulfilmentStatus] ?? "Paid")
+            : (orderStatusLabel[order.status] ?? order.status)}{" "}
+          · placed {order.createdAt.toLocaleDateString("en-GB")}
         </p>
+        {order.status === "paid" && order.trackingNumber ? (
+          <p className="mt-1 text-body text-muted">
+            Tracking: {order.trackingCarrier ? `${order.trackingCarrier} ` : ""}
+            {order.trackingNumber}
+          </p>
+        ) : null}
         <ul className="mt-8 flex flex-col divide-y divide-line/30 border-y border-line/30">
           {items.map((item) => (
             <li key={item.id} className="flex justify-between gap-4 py-4 text-body">
