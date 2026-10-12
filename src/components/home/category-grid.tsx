@@ -4,7 +4,7 @@ import type { HomeCategory } from "@/lib/catalog";
 
 export function CategoryGrid({ categories }: { categories: HomeCategory[] }) {
   return (
-    <section aria-label="Shop by category" className="surface-dark section-y">
+    <section id="categories" aria-label="Shop by category" className="surface-dark section-y">
       <ul className="container-page grid grid-cols-2 gap-x-3 gap-y-8 lg:grid-cols-4 lg:gap-x-4">
         {categories.map(({ label, href, image }) => (
           <li key={label}>

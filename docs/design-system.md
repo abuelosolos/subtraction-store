@@ -227,6 +227,12 @@ lookbook (4 tiles, 3:4) → brand statement → footer. Sections alternate on `s
 Components: `src/components/home/*`, `product-card.tsx`, `site-footer.tsx`. Sample data:
 `src/lib/catalog.ts`.
 
+**Hero snap** (`src/components/home/hero-snap.tsx`, logic in `src/lib/hero-snap.ts`): from md up, one
+wheel gesture (or PageDown/Space/arrows with nothing focused) snaps from the hero to the top edge of
+`#categories` (380ms) and back (320ms). The hero is then fully out of view, so the navbar turns solid
+black over the section's top padding. Everything below the categories scrolls natively. Off below md and
+with `prefers-reduced-motion`.
+
 ## Product detail page
 
 Route `/products/[slug]` (`src/app/products/[slug]/page.tsx`), statically generated from the

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { Campaign } from "@/components/home/campaign";
 import { CategoryGrid } from "@/components/home/category-grid";
+import { HeroSnap } from "@/components/home/hero-snap";
 import { Lookbook } from "@/components/home/lookbook";
 import { ProductGrid } from "@/components/home/product-grid";
 import { ProductRail } from "@/components/home/product-rail";
@@ -42,6 +43,7 @@ export default async function Home() {
     <>
       <SiteNavbar />
       <main>
+        <HeroSnap />
         {/* Hero: positions are in the 1280x670 Figma frame, anchored to the photo. Annotations show from md up; mobile shows the photo only. */}
         <section id="hero" aria-label="Hero" className="hero-overlay">
           <Image
