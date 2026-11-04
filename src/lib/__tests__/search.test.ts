@@ -4,6 +4,7 @@ import { MAX_SEARCH_RESULTS, searchProducts, type SearchItem } from "@/lib/searc
 
 const item = (name: string, category: string, stock = 5): SearchItem => ({
   slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+  categorySlug: category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
   name,
   category,
   priceCents: 100_000,

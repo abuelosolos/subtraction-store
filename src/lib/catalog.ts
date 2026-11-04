@@ -3,6 +3,9 @@
 
 export type Image = { src: string; width: number; height: number; alt: string };
 
+/** One photo of a product; `kind` is front | side | back | item. */
+export type GalleryImage = Image & { kind: string };
+
 export type Gender = "men" | "women" | "unisex";
 
 export type Product = {
@@ -16,6 +19,8 @@ export type Product = {
   currency: string;
   badge?: string;
   image: Image;
+  /** Extra angles (front, side, back, cut-out), product page only. Empty/absent = just `image`. */
+  gallery?: GalleryImage[];
   /** Units available. 0 = sold out. */
   stock: number;
   description: string;
@@ -23,6 +28,7 @@ export type Product = {
   sizes: string[];
   gender: Gender;
   color: string;
+  isBestSeller: boolean;
   /** Free-text collection label, when the product belongs to one. */
   collection?: string;
 };
@@ -51,3 +57,22 @@ export const formatPrice = (cents: number, currency = "USD") =>
     minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
     maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
   }).format(cents / 100);
+
+const CARD_ORDER = ["side", "front", "back", "item"];
+
+/**
+ * Photos a product card cycles through: side (shown at rest), front, back, item.
+ * Unknown kinds go last; falls back to the single card image.
+ */
+export function cardImages(product: Pick<Product, "image" | "gallery">): Image[] {
+  const rank = (kind: string) => {
+    const i = CARD_ORDER.indexOf(kind);
+    return i === -1 ? CARD_ORDER.length : i;
+  };
+  const list = [...(product.gallery ?? [])].sort((a, b) => rank(a.kind) - rank(b.kind));
+  if (list.length === 0) return [product.image];
+  // The first photo must be the one the card shows at rest.
+  const restAt = list.findIndex((g) => g.src === product.image.src);
+  if (restAt > 0) list.unshift(...list.splice(restAt, 1));
+  return list;
+}

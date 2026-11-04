@@ -1,0 +1,14 @@
+/*
+ * Footer surface: real black, while the rest of the shop is white. Same role
+ * variables as .surface-dark / .surface-light, so border-line, text-muted etc.
+ * inside the footer pick up the light-on-black set. Imported by site-footer.tsx.
+ */
+.surface-black {
+  background-color: var(--color-surface-dark);
+  color: var(--color-ink-on-dark);
+  --surface: var(--color-surface-dark);
+  --ink: var(--color-ink-on-dark);
+  --muted: var(--color-muted-on-dark);
+  --subtle: var(--color-subtle-on-dark);
+  --line: var(--color-line-on-dark);
+}

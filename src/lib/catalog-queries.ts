@@ -6,7 +6,7 @@ import { and, asc, desc, eq, isNull, ne, sql, type SQL } from "drizzle-orm";
 
 import { db } from "@/db";
 import { categories, productSlugHistory, products, stock } from "@/db/schema";
-import type { HomeCategory, Product } from "@/lib/catalog";
+import type { GalleryImage, HomeCategory, Image, Product } from "@/lib/catalog";
 import type { SearchItem } from "@/lib/search";
 
 const NEW_ARRIVALS_COUNT = 8;
@@ -31,7 +31,16 @@ const productColumns = {
   gender: products.gender,
   color: products.color,
   collection: products.collection,
+  isBestSeller: products.isBestSeller,
   quantity: sql<number>`coalesce(${stock.quantity}, 0)`,
+  // All photos of the product (card hover + product page), in display order.
+  gallery: sql<GalleryImage[]>`(
+    select coalesce(
+      json_agg(json_build_object('kind', pi.kind, 'src', pi.src, 'width', pi.width, 'height', pi.height, 'alt', pi.alt) order by pi.position),
+      '[]'::json
+    )
+    from product_images pi where pi.product_id = ${products.id}
+  )`,
 };
 
 /** Archived products never reach the storefront; `extra` narrows further. */
@@ -60,6 +69,8 @@ const toProduct = (row: ProductQueryRow): Product => ({
   gender: row.gender,
   color: row.color,
   collection: row.collection ?? undefined,
+  isBestSeller: row.isBestSeller,
+  gallery: row.gallery,
 });
 
 export async function getNewArrivals(): Promise<Product[]> {
@@ -160,16 +171,44 @@ export async function getHomeCategories(): Promise<HomeCategory[]> {
   );
 }
 
-export async function getCategoryBySlug(slug: string): Promise<{ slug: string; name: string } | null> {
+export type CategoryInfo = { slug: string; name: string; image: Image | null };
+
+export async function getCategoryBySlug(slug: string): Promise<CategoryInfo | null> {
   "use cache";
   cacheTag("catalog");
   cacheLife("minutes");
   const [row] = await db
-    .select({ slug: categories.slug, name: categories.name })
+    .select({
+      slug: categories.slug,
+      name: categories.name,
+      imageSrc: categories.imageSrc,
+      imageWidth: categories.imageWidth,
+      imageHeight: categories.imageHeight,
+      imageAlt: categories.imageAlt,
+    })
     .from(categories)
     .where(eq(categories.slug, slug))
     .limit(1);
-  return row ?? null;
+  if (!row) return null;
+  const image =
+    row.imageSrc && row.imageWidth && row.imageHeight
+      ? { src: row.imageSrc, width: row.imageWidth, height: row.imageHeight, alt: row.imageAlt ?? row.name }
+      : null;
+  return { slug: row.slug, name: row.name, image };
+}
+
+/** Categories that have at least one live product, in sort order: the tab row on category pages. */
+export async function getCategoryTabs(): Promise<{ slug: string; name: string }[]> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+  return db
+    .select({ slug: categories.slug, name: categories.name })
+    .from(categories)
+    .where(
+      sql`exists (select 1 from ${products} where ${products.categoryId} = ${categories.id} and ${products.archivedAt} is null)`,
+    )
+    .orderBy(asc(categories.sortOrder), asc(categories.name));
 }
 
 /** Every live product, newest first. Scope for the Men's / Women's gender views. */
@@ -217,6 +256,7 @@ export async function getSearchIndex(): Promise<SearchItem[]> {
       slug: p.slug,
       name: p.name,
       category: p.category,
+      categorySlug: p.categorySlug,
       priceCents: p.priceCents,
       currency: p.currency,
       stock: p.stock,

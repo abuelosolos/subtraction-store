@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { Fragment } from "react";
+
+import { DesktopThumbs, GalleryProvider, MobileThumbs, ProductGallery } from "@/components/product-gallery";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { ProductRail } from "@/components/home/product-rail";
@@ -8,6 +10,7 @@ import { ProductActions } from "@/components/product-actions";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNavbar } from "@/components/site-navbar";
 import { formatPrice, stockState } from "@/lib/catalog";
+import { productCrumbs } from "@/lib/product-filters";
 import { SHIPPING_DOMESTIC_KOBO, SHIPPING_INTERNATIONAL_KOBO } from "@/lib/pricing";
 import {
   getAllProductSlugs,
@@ -51,7 +54,8 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
     notFound();
   }
 
-  const { name, category, categorySlug, priceCents, currency, badge, image, description, stock, sizes } = product;
+  const crumbs = productCrumbs(product);
+  const { name, priceCents, currency, image, description, stock, sizes } = product;
   const state = stockState(stock);
   const soldOut = state === "sold-out";
   const stockLabel =
@@ -61,54 +65,55 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
 
   return (
     <>
-      <SiteNavbar variant="solid" />
-      <main className="surface-dark pt-[var(--navbar-height)]">
-        <nav aria-label="Breadcrumb" className="container-page py-6 text-caption text-muted">
+      {/* Phones: the photo is a hero under a bar with no fill until the photo has scrolled under it (the #hero marker matches the photo).
+          From md the marker is hidden, so the bar is solid as before. */}
+      <SiteNavbar clearOnPhone />
+      <main className="surface-dark relative max-md:pt-0 md:pt-[var(--navbar-height)]">
+        <div id="hero" aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 aspect-[4/5] md:hidden" />
+        <nav aria-label="Breadcrumb" className="container-page hidden py-6 md:block text-caption text-muted">
           <ol className="flex flex-wrap items-center gap-2">
-            <li>
-              <Link href="/" className="hover:text-ink">Home</Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li>
-              <Link href={`/categories/${categorySlug}`} className="hover:text-ink">{category}</Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li aria-current="page" className="text-ink">{name}</li>
+            {crumbs.map((c, i) => (
+              <Fragment key={c.label}>
+                {i > 0 && <li aria-hidden="true">/</li>}
+                {c.href ? (
+                  <li>
+                    <Link href={c.href} className="hover:text-ink">{c.label}</Link>
+                  </li>
+                ) : (
+                  <li aria-current="page" className="text-ink">{c.label}</li>
+                )}
+              </Fragment>
+            ))}
           </ol>
         </nav>
 
-        <div className="container-page grid gap-8 pb-[var(--section-y)] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-16">
+        <GalleryProvider images={product.gallery?.length ? product.gallery : [image]}>
+        <div className="container-page grid gap-8 max-md:gap-6 pb-[var(--section-y)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-16">
           {/* Imagery */}
-          <div className="relative aspect-[4/5] w-full overflow-hidden bg-ink/5">
-            <Image
-              src={image.src}
-              alt={image.alt}
-              fill
-              priority
-              sizes="(min-width: 1024px) 58vw, 100vw"
-              className="object-cover"
-            />
-            {badge ? (
-              <span className="absolute left-4 top-4 bg-surface-light px-2 py-1 text-caption font-medium uppercase text-ink-on-light">
-                {badge}
-              </span>
-            ) : null}
+          <div className="max-md:-mx-[var(--gutter)]">
+            <ProductGallery />
           </div>
 
           {/* Info */}
-          <div className="lg:sticky lg:top-[calc(var(--navbar-height)+1.5rem)] lg:self-start">
-            <p className="text-caption font-medium uppercase text-muted">{category}</p>
-            <h1 className="mt-2 text-heading-2 font-semibold">{name}</h1>
-            <p className="mt-4 text-heading-3 font-semibold">{formatPrice(priceCents, currency)}</p>
+          {/* From lg the thumbnails sit beside the info card and move (and stop) with it. */}
+          <div className="lg:sticky lg:top-[calc(var(--navbar-height)+1.5rem)] lg:flex lg:gap-6 lg:self-start">
+            <DesktopThumbs />
+            <div className="lg:min-w-0 lg:flex-1">
+            <h1 className="text-body font-semibold">{name}</h1>
+            <p className="mt-2 text-body">{formatPrice(priceCents, currency)}</p>
+            <MobileThumbs />
 
-            <p
-              className="mt-4 flex items-center gap-2 text-body"
-              role="status"
-              aria-label={`Availability: ${stockLabel}`}
-            >
-              <span aria-hidden="true" className={`size-2 rounded-pill ${stockCopy[state].dot}`} />
-              {stockLabel}
-            </p>
+            {/* Only call out the exceptions; "In stock" is the default and adds noise. */}
+            {state !== "in-stock" ? (
+              <p
+                className="mt-4 flex items-center gap-2 text-body"
+                role="status"
+                aria-label={`Availability: ${stockLabel}`}
+              >
+                <span aria-hidden="true" className={`size-2 rounded-pill ${stockCopy[state].dot}`} />
+                {stockLabel}
+              </p>
+            ) : null}
 
             <p className="mt-6 max-w-[34rem] text-body text-muted">{description}</p>
 
@@ -148,8 +153,10 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
                 </details>
               ))}
             </div>
+            </div>
           </div>
         </div>
+        </GalleryProvider>
 
         <ProductRail
           id="related-heading"

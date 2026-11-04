@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -12,17 +11,11 @@ const copy = {
     submit: "Login",
     passwordLabel: "Password",
     autoComplete: "current-password",
-    switchPrompt: "Don't have an account?",
-    switchLabel: "Sign up",
-    switchHref: "/register",
   },
   register: {
     submit: "Create account",
     passwordLabel: "Create a password",
     autoComplete: "new-password",
-    switchPrompt: "Already have an account?",
-    switchLabel: "Login",
-    switchHref: "/login",
   },
 } as const;
 
@@ -130,16 +123,6 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           {pending ? "Please wait" : text.submit}
         </button>
       </form>
-
-      <p className="text-center text-caption text-subtle">
-        {text.switchPrompt}{" "}
-        <Link
-          href={{ pathname: text.switchHref, query: next === "/" ? undefined : { next } }}
-          className="underline"
-        >
-          {text.switchLabel}
-        </Link>
-      </p>
     </>
   );
 }

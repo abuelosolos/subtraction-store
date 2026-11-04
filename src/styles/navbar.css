@@ -9,9 +9,11 @@
  */
 
 :root {
-  /* Phones: 56px bar with 44px tap targets. From md: Figma's 61px / 15px. */
-  --navbar-height: 56px;
-  --navbar-padding-y: 6px;
+  /* Phones: 62px bar with 44px tap targets. From md: 72px / 20px (Figma's 61px, made roomier). */
+  --navbar-height: 62px;
+  --navbar-padding-y: 9px;
+  --strip-h: 32px; /* rotating category strip above the home navbar */
+  --strip-bg: var(--color-surface-light); /* white like the shop; the page covers it on scroll */
   --navbar-content-height: calc(var(--navbar-height) - 2 * var(--navbar-padding-y));
   --navbar-transition: var(--duration-standard) var(--ease-standard);
 
@@ -19,9 +21,9 @@
   --navbar-hero-ink: var(--color-ink-on-light);
   --navbar-hero-link: var(--color-nav-on-light);
 
-  --navbar-solid-bg: var(--color-surface-dark);
-  --navbar-solid-ink: var(--color-ink-on-dark);
-  --navbar-solid-link: var(--color-muted-on-dark);
+  --navbar-solid-bg: var(--color-surface-light);
+  --navbar-solid-ink: var(--color-ink-on-light);
+  --navbar-solid-link: var(--color-nav-on-light);
   /*
    * Glass over the hero: the light surface at partial opacity plus a blur, so
    * the photograph shows through softly. Used by the bar once it has moved
@@ -37,37 +39,38 @@
    * photograph stays readable, a brightness/saturation lift, and a faint sheen
    * plus edge highlights so it still reads as a pane of glass.
    */
-  --navbar-glass-bg: color-mix(in srgb, var(--color-surface-light) 32%, transparent);
-  --navbar-glass-blur: blur(10px) saturate(1.7) brightness(1.06);
+  --navbar-glass-bg: color-mix(in srgb, var(--color-surface-light) 6%, transparent);
+  --navbar-glass-blur: blur(2px) saturate(1.2);
   --navbar-glass-sheen: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--color-surface-light) 45%, transparent),
+    color-mix(in srgb, var(--color-surface-light) 12%, transparent),
     transparent 70%
   );
-  --navbar-glass-edge: color-mix(in srgb, var(--color-surface-light) 70%, transparent);
 
   /* Account menu fill follows the bar: glass over the hero, dark when solid. */
   --navbar-menu-hero-bg: var(--glass-bg-strong);
   --navbar-menu-hero-ink: var(--color-ink-on-light);
   --navbar-menu-hero-muted: var(--color-muted-on-light);
   --navbar-menu-hero-hover: var(--color-overlay-watermark);
-  --navbar-menu-solid-bg: var(--color-surface-dark);
-  --navbar-menu-solid-ink: var(--color-ink-on-dark);
-  --navbar-menu-solid-muted: var(--color-muted-on-dark);
-  --navbar-menu-solid-hover: var(--color-overlay-ghost);
+  --navbar-menu-solid-bg: var(--color-surface-light);
+  --navbar-menu-solid-ink: var(--color-ink-on-light);
+  --navbar-menu-solid-muted: var(--color-muted-on-light);
+  --navbar-menu-solid-hover: var(--color-overlay-watermark);
 }
 
 @media (min-width: 48rem) {
   :root {
-    --navbar-height: 61px;
-    --navbar-padding-y: 15px;
+    --navbar-height: 72px;
+    --navbar-padding-y: 20px;
   }
 }
 
 @layer components {
   .navbar {
     position: fixed;
-    inset: 0 0 auto 0;
+    /* --navbar-top is 0 everywhere except the home page, where SiteNavbar
+       lowers the bar by the strip height until the page scrolls past it. */
+    inset: var(--navbar-top, 0px) 0 auto 0;
     z-index: 50;
     /* Fixed, not min-height: nothing inside may change the bar's height. */
     height: var(--navbar-height);
@@ -76,7 +79,13 @@
     color: var(--navbar-ink);
     transition:
       background-color var(--navbar-transition),
-      color var(--navbar-transition);
+      color var(--navbar-transition),
+      top 0.6s cubic-bezier(0.22, 0.61, 0.36, 1); /* gentle slide over the strip */
+  }
+
+  /* Home: start below the strip even before the scroll script has run. */
+  .navbar[data-strip] {
+    top: var(--navbar-top, var(--strip-h));
   }
 
   /*
@@ -93,9 +102,6 @@
     background-image: var(--navbar-glass-sheen);
     -webkit-backdrop-filter: var(--navbar-glass-blur);
     backdrop-filter: var(--navbar-glass-blur);
-    box-shadow:
-      inset 0 1px 0 var(--navbar-glass-edge),
-      inset 0 -1px 0 var(--navbar-glass-edge);
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--navbar-transition);
@@ -143,6 +149,41 @@
       --navbar-menu-muted: var(--navbar-menu-solid-muted);
       --navbar-menu-hover: var(--navbar-menu-solid-hover);
     }
+  }
+
+  /* Opt-in (product pages): stay unfilled over the photo on phones; solid again once it has scrolled past. */
+  @media (max-width: 47.99rem) {
+    .navbar[data-phone-clear][data-navbar="hero"] {
+      --navbar-bg: var(--navbar-hero-bg);
+      --navbar-ink: var(--navbar-hero-ink);
+      --navbar-link: var(--navbar-hero-link);
+    }
+  }
+
+  /* ...and once the page has moved a little, the same glass the bar gets from md up. */
+  @media (max-width: 47.99rem) {
+    .navbar[data-phone-clear][data-navbar="hero"][data-scrolled="true"]::before {
+      opacity: 1;
+    }
+  }
+
+  /*
+   * Dark photographic hero (category pages): transparent bar with a blur over
+   * the photo and light ink, at every width. Once the hero has scrolled under
+   * the bar, data-navbar flips to "solid" and the white bar returns.
+   */
+  .navbar[data-hero-tone="dark"][data-navbar="hero"] {
+    --navbar-bg: transparent;
+    --navbar-ink: var(--color-ink-on-dark);
+    --navbar-link: var(--color-ink-on-dark);
+  }
+
+  .navbar[data-hero-tone="dark"][data-navbar="hero"]::before {
+    opacity: 1;
+    background-color: rgb(0 0 0 / 0.18);
+    background-image: none;
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    backdrop-filter: blur(12px) saturate(1.2);
   }
 
   .navbar-link {
@@ -224,7 +265,7 @@
   @media (max-width: 47.99rem) {
     .navbar-menu {
       position: fixed;
-      top: var(--navbar-height);
+      top: calc(var(--navbar-top, 0px) + var(--navbar-height));
       right: 0;
       padding-top: 0;
     }
@@ -397,7 +438,7 @@
 
     .navbar-search-panel {
       position: fixed;
-      top: var(--navbar-height);
+      top: calc(var(--navbar-top, 0px) + var(--navbar-height));
       right: 0;
       left: 0;
       width: auto;
@@ -457,7 +498,7 @@
 
 /*
  * Phone menu: hamburger in the bar (below md) and the right-hand drawer it
- * opens. Always a dark panel, like the solid bar. The trigger is a 44px tap
+ * opens as a full-width sheet sliding up from the bottom. Always a dark panel, like the solid bar. The trigger is a 44px tap
  * target that sits close to the Search icon.
  */
 @layer components {
@@ -486,10 +527,10 @@
 
   .mobile-menu {
     position: fixed;
-    inset: 0 0 0 auto;
-    width: min(20rem, 85vw);
+    inset: auto 0 0 0;
+    width: 100%;
     max-width: none;
-    height: 100%;
+    height: 100dvh;
     max-height: none;
     margin: 0;
     padding: 0;
@@ -515,10 +556,10 @@
 
   @keyframes mobile-menu-in {
     from {
-      transform: translateX(100%);
+      transform: translateY(100%);
     }
     to {
-      transform: translateX(0);
+      transform: translateY(0);
     }
   }
 
@@ -534,8 +575,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-ink-on-light);
+    color: var(--color-surface-light);
   }
 
   .mobile-menu-body {
@@ -547,7 +591,7 @@
   .mobile-menu-group {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--color-overlay-ghost);
+    border-top: 1px solid var(--color-overlay-watermark);
   }
 
   .mobile-menu-heading {
@@ -573,5 +617,270 @@
   .mobile-menu-item:focus-visible,
   .mobile-menu-item[aria-current="page"] {
     color: var(--navbar-solid-ink);
+  }
+}
+
+/*
+ * Desktop shop menu: plus button at the right end of the bar and the right-hand
+ * drawer it slides in. Reuses the mobile menu's head/body/item styles.
+ */
+@layer components {
+  .nav-drawer-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    transition: transform var(--navbar-transition);
+  }
+
+  .nav-drawer-trigger[aria-expanded="true"] {
+    transform: rotate(45deg);
+  }
+
+  .nav-drawer {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(48vw, 42rem);
+    min-width: min(22rem, 100vw);
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: var(--navbar-solid-bg);
+    color: var(--navbar-solid-ink);
+    text-transform: none;
+  }
+
+  .nav-drawer:not([open]) {
+    display: none;
+  }
+
+  .nav-drawer[open] {
+    display: flex;
+    flex-direction: column;
+    animation: nav-drawer-in 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  /* Blur the page behind the drawer instead of washing it white. */
+  .nav-drawer::backdrop {
+    background-color: transparent;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+
+  @keyframes nav-drawer-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .nav-drawer-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-overlay-watermark);
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+  }
+
+  .nav-drawer-meta a {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  /* Secondary colour at rest, primary on hover or for the current page. */
+  .nav-drawer .mobile-menu-item {
+    min-height: 44px;
+    font-size: var(--text-display-sm);
+    line-height: 1.2;
+    color: var(--color-muted-on-light);
+  }
+
+  .nav-drawer .mobile-menu-item:hover,
+  .nav-drawer .mobile-menu-item:focus-visible,
+  .nav-drawer .mobile-menu-item[aria-current="page"] {
+    color: var(--color-ink-on-light);
+    text-decoration: none;
+  }
+}
+
+/* ---- Rotating category strip (home only). Fixed at the very top, behind the
+   page: the hero (and the navbar, which slides up over it) cover it like paper
+   as you scroll; back at the top it is uncovered again. ---- */
+@layer components {
+  .category-strip {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 0; /* under <main> (z-index 1) and the navbar (50) */
+    height: var(--strip-h);
+    background-color: var(--strip-bg);
+    color: var(--color-ink-on-light);
+    border-bottom: var(--border-width-hairline) solid color-mix(in srgb, var(--color-line-on-light) 30%, transparent);
+  }
+
+  .category-strip-inner {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    height: 100%;
+    max-width: var(--container-frame);
+    margin-inline: auto;
+    padding-inline: calc(var(--gutter) - 14px);
+  }
+
+  .category-strip-viewport {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .category-strip-item {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    font-weight: 500;
+    transition:
+      transform var(--duration-standard) var(--ease-standard),
+      opacity var(--duration-standard) var(--ease-standard);
+  }
+
+  .category-strip-link {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+    text-decoration-thickness: 1px;
+    cursor: pointer;
+  }
+
+  .category-strip-link:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  .category-strip-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    cursor: pointer;
+    color: var(--color-ink-on-light);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .category-strip-item {
+      transition: none;
+    }
+  }
+}
+
+/* ---- Phone search: full-screen sheet from the right; the field expands out of the icon. ---- */
+@layer components {
+  .mobile-search {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: var(--color-surface-light);
+    color: var(--color-ink-on-light);
+  }
+
+  .mobile-search:not([open]) {
+    display: none;
+  }
+
+  .mobile-search[open] {
+    display: flex;
+    flex-direction: column;
+    animation: mobile-search-in 400ms var(--ease-standard);
+  }
+
+  .mobile-search::backdrop {
+    background-color: transparent;
+  }
+
+  .mobile-search-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--navbar-height);
+    padding: var(--navbar-padding-y) var(--gutter);
+  }
+
+  .mobile-search-field {
+    margin-top: 0.5rem;
+    border-bottom: var(--border-width-default) solid color-mix(in srgb, var(--color-ink-on-light) 18%, transparent);
+    animation: mobile-search-field-in 300ms var(--ease-standard) both;
+  }
+
+  .mobile-search-input {
+    width: 100%;
+    min-height: 2.75rem;
+    background: transparent;
+    font-size: 1rem; /* 16px keeps iOS from zooming on focus */
+    outline: none;
+  }
+
+  .mobile-search-input::placeholder {
+    color: var(--color-muted-on-light);
+  }
+
+  .mobile-search-input::-webkit-search-cancel-button {
+    appearance: none;
+  }
+
+  .mobile-search-rail {
+    display: flex;
+    gap: 0.75rem;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+
+  .mobile-search-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* The sheet slides up from the bottom of the screen. */
+  @keyframes mobile-search-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  /* Starts as the size of the search icon, right-anchored, and grows to full width. */
+  @keyframes mobile-search-field-in {
+    from {
+      clip-path: inset(0 0 0 calc(100% - 2.75rem));
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-search[open],
+    .mobile-search-field {
+      animation: none;
+    }
   }
 }

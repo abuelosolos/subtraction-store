@@ -80,7 +80,7 @@ export function CartView() {
   );
 
   return (
-    <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-16">
+    <div className="grid gap-12 max-md:pb-40 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:gap-16">
       <ul className="flex flex-col divide-y divide-line/30 border-y border-line/30">
         {lines.map((line) => (
           <CartRow key={`${line.slug}:${line.size ?? ""}`} line={line} product={products.get(line.slug)} />
@@ -89,33 +89,28 @@ export function CartView() {
 
       <aside
         aria-labelledby="summary-heading"
-        className="h-fit border border-line/30 p-6 lg:sticky lg:top-[calc(var(--navbar-height)+1.5rem)]"
+        className="h-fit border border-line/30 p-6 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-40 max-md:border-x-0 max-md:border-b-0 max-md:bg-surface max-md:px-[var(--gutter)] max-md:pt-4 max-md:pb-[max(1rem,env(safe-area-inset-bottom))] lg:sticky lg:top-[calc(var(--navbar-height)+1.5rem)]"
       >
-        <h2 id="summary-heading" className="text-heading-3 font-semibold">Summary</h2>
-        <dl className="mt-6 flex flex-col gap-3 text-body">
+        <h2 id="summary-heading" className="text-heading-3 font-semibold max-md:sr-only">Summary</h2>
+        <dl className="mt-6 flex flex-col gap-3 text-body max-md:mt-0">
           <div className="flex justify-between gap-4">
             <dt className="text-muted">
               Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
             </dt>
             <dd className="font-medium">{formatPrice(subtotal, currency)}</dd>
           </div>
-          <div className="flex justify-between gap-4">
+          <div className="flex justify-between gap-4 max-md:hidden">
             <dt className="text-muted">Shipping</dt>
             <dd className="text-muted">Calculated at checkout</dd>
           </div>
         </dl>
-        <p className="mt-4 text-caption text-subtle">
+        <p className="mt-4 text-caption text-subtle max-md:hidden">
           Final prices and availability are confirmed when you check out.
         </p>
-        {payable.length > 0 ? (
-          <Link href="/checkout" className="btn btn-inverse btn-lg btn-block mt-6">
-            Checkout
-          </Link>
-        ) : (
-          <button type="button" disabled className="btn btn-inverse btn-lg btn-block mt-6">
-            Nothing available to buy
-          </button>
-        )}
+        <button type="button" disabled className="btn btn-inverse btn-lg btn-block mt-6 max-md:mt-3">
+          Checkout
+        </button>
+        <p className="mt-2 text-center text-caption text-subtle">Disabled in this portfolio demo.</p>
       </aside>
     </div>
   );

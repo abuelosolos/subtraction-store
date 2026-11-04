@@ -10,6 +10,7 @@ import {
   groupByCategory,
   listingTitle,
   parseFilters,
+  productCrumbs,
   serializeFilters,
   type Filters,
 } from "@/lib/product-filters";
@@ -26,6 +27,7 @@ const p = (over: Partial<Product> & { slug: string }): Product => ({
   sizes: [],
   gender: "unisex",
   color: "Black",
+  isBestSeller: false,
   ...over,
 });
 
@@ -215,5 +217,58 @@ describe("groupByCategory", () => {
     const groups = groupByCategory(shop, ["footwear", "t-shirts", "men"]);
     expect(groups.map((g) => g.slug)).toEqual(["footwear", "t-shirts", "men"]);
     expect(groups[0].products.map((x) => x.slug)).toEqual(["boot", "boot2"]);
+  });
+});
+
+describe("productCrumbs", () => {
+  const base = { name: "Work Jacket", category: "Jackets", categorySlug: "jackets" };
+  it("keeps men's products in the Men department", () => {
+    expect(productCrumbs({ ...base, gender: "men" })).toEqual([
+      { label: "Home", href: "/" },
+      { label: "Men", href: "/categories/men" },
+      { label: "Men's Jackets", href: "/categories/jackets?gender=men" },
+      { label: "Work Jacket" },
+    ]);
+  });
+  it("keeps women's products in the Women department", () => {
+    const c = productCrumbs({ ...base, gender: "women" });
+    expect(c[1]).toEqual({ label: "Women", href: "/categories/women" });
+    expect(c[2]).toEqual({ label: "Women's Jackets", href: "/categories/jackets?gender=women" });
+  });
+  it("leaves unisex products on the plain category", () => {
+    expect(productCrumbs({ ...base, gender: "unisex" }).map((c) => c.href)).toEqual([
+      "/",
+      "/categories/jackets",
+      undefined,
+    ]);
+  });
+  it("does not repeat the department for catch-all men/women categories", () => {
+    const c = productCrumbs({ name: "Coat", category: "Men's", categorySlug: "men", gender: "men" });
+    expect(c.map((x) => x.label)).toEqual(["Home", "Men", "Coat"]);
+  });
+});
+
+describe("switches and sort", () => {
+  const list = [
+    p({ slug: "a", priceCents: 300, stock: 0 }),
+    p({ slug: "b", priceCents: 100, isBestSeller: true }),
+    p({ slug: "c", priceCents: 200 }),
+  ];
+  const slugs = (f: Partial<typeof EMPTY_FILTERS>) =>
+    applyFilters(list, { ...EMPTY_FILTERS, ...f }).map((x) => x.slug);
+
+  it("hides sold-out items with inStock", () => expect(slugs({ inStock: true })).toEqual(["b", "c"]));
+  it("keeps only best sellers", () => expect(slugs({ bestSeller: true })).toEqual(["b"]));
+  it("sorts by price", () => {
+    expect(slugs({ sort: "price-asc" })).toEqual(["b", "c", "a"]);
+    expect(slugs({ sort: "price-desc" })).toEqual(["a", "c", "b"]);
+  });
+  it("round-trips through the URL and drops an invalid sort", () => {
+    const f = { ...EMPTY_FILTERS, inStock: true, bestSeller: true, sort: "price-desc" as const };
+    expect(parseFilters(new URLSearchParams(serializeFilters(f)))).toMatchObject(f);
+    expect(parseFilters(new URLSearchParams("sort=bogus")).sort).toBe("");
+  });
+  it("counts switches but not sort", () => {
+    expect(activeFilterCount({ ...EMPTY_FILTERS, inStock: true, sort: "price-asc" })).toBe(1);
   });
 });

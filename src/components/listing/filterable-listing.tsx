@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { FilterGroups } from "@/components/listing/filter-groups";
+import { FilterGroups, SortGroup, SwitchRow } from "@/components/listing/filter-groups";
 import { ProductListing, type Crumb } from "@/components/product-listing";
-import { CloseIcon } from "@/components/ui/icons";
+import { CloseIcon, FilterIcon } from "@/components/ui/icons";
 import type { Product } from "@/lib/catalog";
 import {
   EMPTY_FILTERS,
@@ -32,6 +32,7 @@ export function FilterableListing({
   baseCrumbs,
   subtitle,
   emptyMessage,
+  tabs,
 }: {
   id: string;
   products: Product[];
@@ -43,6 +44,8 @@ export function FilterableListing({
   baseCrumbs: Crumb[];
   subtitle: string;
   emptyMessage: string;
+  /** Tab row under a department (Men / Women); rendered above the toolbar. */
+  tabs?: React.ReactNode;
 }) {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -91,7 +94,11 @@ export function FilterableListing({
     };
   }, [drawerOpen]);
 
-  const groups = <FilterGroups facets={facets} onToggle={toggle} />;
+  const groups = (
+    <FilterGroups facets={facets} onToggle={toggle}>
+      <SortGroup value={filters.sort} onChange={(sort) => update({ ...filters, sort })} />
+    </FilterGroups>
+  );
   const count = `${visible.length} ${visible.length === 1 ? "piece" : "pieces"}`;
 
   return (
@@ -100,7 +107,7 @@ export function FilterableListing({
         id={id}
         title={title}
         subtitle={subtitle}
-        crumbs={[...baseCrumbs, { label: title }]}
+        crumbs={baseCrumbs.length > 0 ? [...baseCrumbs, { label: title }] : []}
         products={visible}
         emptyMessage={emptyMessage}
         empty={
@@ -113,28 +120,18 @@ export function FilterableListing({
             </div>
           ) : undefined
         }
+        layout="catalog"
+        tabs={tabs}
         toolbar={
           <button
             type="button"
-            className="btn btn-outline md:hidden"
+            className="inline-flex items-center gap-2 underline underline-offset-4"
             onClick={() => setDrawerOpen(true)}
             aria-haspopup="dialog"
           >
+            <FilterIcon size={16} />
             Filter{active > 0 ? ` (${active})` : ""}
           </button>
-        }
-        sidebar={
-          <div className="sticky top-[calc(var(--navbar-height)+2rem)]">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-body font-semibold">Filter</h2>
-              {active > 0 ? (
-                <button type="button" onClick={clear} className="text-caption underline underline-offset-4">
-                  Clear all
-                </button>
-              ) : null}
-            </div>
-            {groups}
-          </div>
         }
       />
 
@@ -143,27 +140,33 @@ export function FilterableListing({
       <dialog
         ref={dialogRef}
         className="filter-drawer"
-        aria-label="Filter"
+        aria-labelledby="filter-drawer-title"
         onClose={() => setDrawerOpen(false)}
         onClick={(e) => {
           if (e.target === e.currentTarget) setDrawerOpen(false);
         }}
       >
-        <div className="flex items-center justify-between px-6 py-4">
-          <h2 className="text-body font-semibold">Filter</h2>
-          <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close filters" className="inline-flex size-11 items-center justify-center">
-            <CloseIcon />
-          </button>
+        <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close filters" className="filter-close">
+          <CloseIcon size={20} />
+        </button>
+        <div className="flex items-baseline justify-between gap-4 pl-6 pr-[4.5rem] pt-10 pb-6">
+          <h2 id="filter-drawer-title" className="filter-title">Filter and sort</h2>
+          {active > 0 ? (
+            <button type="button" onClick={clear} className="text-caption underline underline-offset-4">
+              Clear all
+            </button>
+          ) : null}
         </div>
         <div className="flex-1 overflow-y-auto px-6">
+          <div className="filter-switches">
+            <SwitchRow label="In stock only" checked={filters.inStock} onChange={(inStock) => update({ ...filters, inStock })} />
+            <SwitchRow label="Best sellers" checked={filters.bestSeller} onChange={(bestSeller) => update({ ...filters, bestSeller })} />
+          </div>
           {groups}
         </div>
-        <div className="flex gap-3 border-t border-line/30 px-6 py-4">
-          {active > 0 ? (
-            <button type="button" onClick={clear} className="btn btn-outline">Clear all</button>
-          ) : null}
-          <button type="button" onClick={() => setDrawerOpen(false)} className="btn btn-inverse flex-1">
-            Show {count}
+        <div className="px-6 py-4">
+          <button type="button" onClick={() => setDrawerOpen(false)} className="btn btn-inverse w-full uppercase">
+            Show {visible.length} {visible.length === 1 ? "item" : "items"}
           </button>
         </div>
       </dialog>

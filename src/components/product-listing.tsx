@@ -19,6 +19,8 @@ export function ProductListing({
   sidebar,
   toolbar,
   headingAs: Heading = "h1",
+  layout = "page",
+  tabs,
 }: {
   id: string;
   title: string;
@@ -37,7 +39,73 @@ export function ProductListing({
   toolbar?: ReactNode;
   /** Pages that already have an h1 (e.g. a banner) render this heading as h2. */
   headingAs?: "h1" | "h2";
+  /**
+   * "catalog": category pages under a hero. No visible heading or sidebar; a tab
+   * row, then "N items" with the toolbar on the right, then a full-bleed seamless grid.
+   */
+  layout?: "page" | "catalog";
+  /** Category tab row (catalog layout). */
+  tabs?: ReactNode;
 }) {
+  if (layout === "catalog") {
+    return (
+      <>
+        {crumbs.length > 0 ? (
+          <nav aria-label="Breadcrumb" className="container-page pt-6 text-caption text-muted">
+            <ol className="flex flex-wrap items-center gap-2">
+              {crumbs.map(({ label, href }, i) => (
+                <li key={label} className="contents">
+                  {i > 0 ? <span aria-hidden="true">/</span> : null}
+                  {href ? (
+                    <Link href={href} className="underline underline-offset-2 hover:text-ink">{label}</Link>
+                  ) : (
+                    <span aria-current="page" className="text-ink">{label}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
+        ) : null}
+        <section aria-labelledby={id} className="mt-6 pb-[var(--section-y)]">
+          <h2 id={id} className="sr-only">{title}</h2>
+          {/* Tabs and the count/filter row stick under the navbar while the grid scrolls. */}
+          <div className="sticky top-[var(--navbar-height)] z-30 bg-surface">
+            {tabs ? (
+              <div className="border-b border-line/30">
+                <div className="container-page">{tabs}</div>
+              </div>
+            ) : null}
+            <div className={tabs ? undefined : "border-y border-line/30"}>
+              <div className="container-page flex items-center justify-between gap-4 py-4 text-body">
+                <p>
+                  {products.length} {products.length === 1 ? "item" : "items"}
+                </p>
+                {toolbar}
+              </div>
+            </div>
+          </div>
+          {content ? (
+            content
+          ) : products.length > 0 ? (
+            <ul className="grid grid-cols-2 gap-x-0.5 md:grid-cols-3 lg:grid-cols-4">
+              {products.map((product, index) => (
+                <li key={product.slug}>
+                  <ProductCard
+                    product={product}
+                    sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+                    priority={index < 4}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="container-page">{empty ?? <p className="py-16 text-body text-muted">{emptyMessage}</p>}</div>
+          )}
+        </section>
+      </>
+    );
+  }
+
   return (
     <>
       {crumbs.length > 0 ? (

@@ -39,7 +39,7 @@
 
   /* ---- Colors: fixed roles ---- */
   --color-surface-dark: #0b0b0b; /* the one dark: page, navbar, auth, buttons */
-  --color-surface-light: #f5f5f5; /* hero ground, light button fill */
+  --color-surface-light: #ffffff; /* the page: white ground everywhere in the shop */
   --color-ink-on-dark: #f5f5f5; /* primary text on dark */
   --color-ink-on-light: #0b0b0b; /* primary text on light */
   --color-muted-on-dark: #a1a1a1; /* secondary text, field border */
@@ -50,6 +50,7 @@
   --color-line-on-light: #0b0b0b; /* 1px ghost-button outline */
   --color-overlay-watermark: rgb(0 0 0 / 0.1); /* hero giant words */
   --color-overlay-ghost: rgb(255 255 255 / 0.1); /* ghost button fill */
+  --color-overlay-scrim: rgb(0 0 0 / 0.4); /* dimmed page behind the filter panel (blurred) */
   --color-overlay-panel: rgb(255 255 255 / 0.2); /* empty landing block; content TBD */
 
   /* ---- Containers (max-w-frame, max-w-content, ...) ---- */
@@ -100,12 +101,13 @@
   --gap-grid: 2.5625rem; /* 41: gap between collection tiles */
   --section-y: 4rem; /* 64: below md; 107 from md up, see below */
 
-  /* Contextual roles: default is the dark surface. */
-  --surface: var(--color-surface-dark);
-  --ink: var(--color-ink-on-dark);
-  --muted: var(--color-muted-on-dark);
-  --subtle: var(--color-subtle-on-dark);
-  --line: var(--color-line-on-dark);
+  /* Contextual roles: the shop is white; the default is the light surface.
+     (Admin re-declares the dark set on .admin-shell.) */
+  --surface: var(--color-surface-light);
+  --ink: var(--color-ink-on-light);
+  --muted: var(--color-muted-on-light);
+  --subtle: var(--color-muted-on-light);
+  --line: var(--color-line-on-light);
 }
 
 @media (min-width: 48rem) {
@@ -121,12 +123,14 @@
   color: var(--ink);
 }
 
+/* Name kept for the many call sites: the shop's "dark" sections are now white
+   (black/white inverted). Real dark lives only in the admin shell. */
 .surface-dark {
-  --surface: var(--color-surface-dark);
-  --ink: var(--color-ink-on-dark);
-  --muted: var(--color-muted-on-dark);
-  --subtle: var(--color-subtle-on-dark);
-  --line: var(--color-line-on-dark);
+  --surface: var(--color-surface-light);
+  --ink: var(--color-ink-on-light);
+  --muted: var(--color-muted-on-light);
+  --subtle: var(--color-muted-on-light);
+  --line: var(--color-line-on-light);
 }
 
 .surface-light {
@@ -140,7 +144,7 @@
 /* ---- Base ---- */
 @layer base {
   html {
-    background-color: var(--color-surface-dark);
+    background-color: var(--color-surface-light);
     -webkit-text-size-adjust: 100%;
   }
 
@@ -334,18 +338,18 @@
   max-width: var(--container-frame);
   margin-inline: auto;
 
-  /* Phones: black, full-height column. The photo sits near the top at its
+  /* Phones: white, full-height column. The photo sits near the top at its
      natural ratio (gap below the navbar is 30% of the photo's own height),
-     then the wordmark, write-up and buttons. Same tokens as .surface-dark. */
+     then the wordmark, write-up and buttons. Same tokens as .surface-light. */
   display: flex;
   flex-direction: column;
   min-height: 100svh;
   padding-top: calc(var(--navbar-height) + 100vw * 1340 / 2560 * 0.3);
-  --surface: var(--color-surface-dark);
-  --ink: var(--color-ink-on-dark);
-  --muted: var(--color-muted-on-dark);
-  --subtle: var(--color-subtle-on-dark);
-  --line: var(--color-line-on-dark);
+  --surface: var(--color-surface-light);
+  --ink: var(--color-ink-on-light);
+  --muted: var(--color-muted-on-light);
+  --subtle: var(--color-muted-on-light);
+  --line: var(--color-line-on-light);
   background-color: var(--surface);
   color: var(--ink);
 
@@ -367,7 +371,7 @@
   }
 }
 
-/* Phones: full width at the photo's real ratio, fading into the black. */
+/* Phones: full width at the photo's real ratio, fading into the white. */
 @utility hero-overlay-media {
   flex: none;
   width: 100%;

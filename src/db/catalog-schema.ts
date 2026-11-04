@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 
 /** Who a product is for. `unisex` shows under both Men's and Women's. */
@@ -65,6 +66,27 @@ export const products = pgTable(
 );
 
 /**
+ * Extra photos per product (front, side, back, cut-out...), shown on the product
+ * page. `products.image_*` stays the primary/card image.
+ */
+export const productImages = pgTable(
+  "product_images",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    productId: integer("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    position: integer().notNull(),
+    kind: text().notNull(),
+    src: text().notNull(),
+    width: integer().notNull(),
+    height: integer().notNull(),
+    alt: text().notNull(),
+  },
+  (t) => [unique("product_images_product_position_unique").on(t.productId, t.position)],
+);
+
+/**
  * Slugs a product used to have. Lets old product URLs redirect and old cart or
  * saved entries resolve after a slug change.
  */
@@ -114,6 +136,7 @@ export const stockRelations = relations(stock, ({ one }) => ({
   }),
 }));
 
+export type ProductImageRow = typeof productImages.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type ProductRow = typeof products.$inferSelect;
 export type StockRow = typeof stock.$inferSelect;

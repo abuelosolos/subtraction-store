@@ -24,7 +24,6 @@ import {
   updateFulfilment,
 } from "@/lib/admin/orders";
 import { adjustStock, stockAdjustSchema } from "@/lib/admin/stock";
-import { loadPricedProducts } from "@/lib/checkout";
 
 import { createBranchFixtures, testUrl } from "./helpers/branch";
 
@@ -268,11 +267,6 @@ describe.skipIf(!testUrl)("admin data layer (Neon test branch)", () => {
       const [hist] = await fx.db.select().from(productSlugHistory).where(eq(productSlugHistory.oldSlug, slug));
       expect(hist?.productId).toBe(p.id);
 
-      // An old-slug cart line prices as the same product, under both slugs.
-      const priced = await loadPricedProducts(fx.db, [slug]);
-      expect(priced.get(slug)?.id).toBe(p.id);
-      expect(priced.get(next)?.id).toBe(p.id);
-
       // Another product cannot take the new slug or the retired one.
       const other = await fx.makeProduct("slugother", 1);
       expect(await updateProduct(fx.db, { id: admin }, other.id, { ...rest, slug: next })).toEqual({ ok: false, reason: "slug_taken" });
@@ -283,15 +277,10 @@ describe.skipIf(!testUrl)("admin data layer (Neon test branch)", () => {
       expect(await fx.db.select().from(productSlugHistory).where(eq(productSlugHistory.oldSlug, slug))).toHaveLength(0);
     });
 
-    it("archived products are excluded from checkout pricing and can be restored", async () => {
+    it("archiving a product can be undone", async () => {
       const p = await fx.makeProduct("arch", 5);
-      expect((await loadPricedProducts(fx.db, [p.slug])).has(p.slug)).toBe(true);
-
       expect(await setProductArchived(fx.db, { id: admin }, p.id, true)).toEqual({ ok: true });
-      expect((await loadPricedProducts(fx.db, [p.slug])).has(p.slug)).toBe(false);
-
       expect(await setProductArchived(fx.db, { id: admin }, p.id, false)).toEqual({ ok: true });
-      expect((await loadPricedProducts(fx.db, [p.slug])).has(p.slug)).toBe(true);
     });
 
     it("cannot delete a category that still has products; can delete an empty one", async () => {

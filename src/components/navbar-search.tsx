@@ -3,13 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { getSearchIndexAction } from "@/app/search/actions";
+import { MobileSearch, type SearchIndex } from "@/components/mobile-search";
 import { formatPrice } from "@/lib/catalog";
-import { searchProducts, type SearchItem } from "@/lib/search";
+import { searchProducts } from "@/lib/search";
 
-type Index = { status: "idle" | "loading" | "error" } | { status: "ready"; items: SearchItem[] };
+type Index = SearchIndex;
+
+const PHONE_QUERY = "(max-width: 47.99rem)";
+const subscribePhone = (cb: () => void) => {
+  const mq = window.matchMedia(PHONE_QUERY);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
+const isPhone = () => window.matchMedia(PHONE_QUERY).matches;
 
 /**
  * Navbar search. The field grows to the left of the icon over a light fill;
@@ -31,6 +40,7 @@ export function NavbarSearch({ children }: { children: ReactNode }) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(-1);
   const [index, setIndex] = useState<Index>({ status: "idle" });
+  const phone = useSyncExternalStore(subscribePhone, isPhone, () => false);
 
   const hide = () => {
     setOpenOn(null);
@@ -40,7 +50,8 @@ export function NavbarSearch({ children }: { children: ReactNode }) {
 
   // Load the product index the first time the field opens.
   useEffect(() => {
-    if (!open || index.status !== "idle") return;
+    // Phones load the index up front so the sheet slides in already filled.
+    if ((!open && !phone) || index.status !== "idle") return;
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIndex({ status: "loading" });
@@ -54,7 +65,7 @@ export function NavbarSearch({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [open, index.status]);
+  }, [open, phone, index.status]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -88,6 +99,25 @@ export function NavbarSearch({ children }: { children: ReactNode }) {
           : results.length === 0
             ? `No items match "${query.trim()}"`
             : `${results.length} ${results.length === 1 ? "item" : "items"} found`;
+
+  // Phones: full-screen search sheet instead of the inline field.
+  if (phone) {
+    return (
+      <>
+        <button
+          type="button"
+          aria-label="Search"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className="navbar-search-trigger"
+          onClick={() => setOpenOn(pathname)}
+        >
+          {children}
+        </button>
+        <MobileSearch open={open} onClose={hide} index={index} />
+      </>
+    );
+  }
 
   return (
     <div

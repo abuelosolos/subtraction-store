@@ -1,37 +1,24 @@
-import Image from "next/image";
 import Link from "next/link";
 
-import { formatPrice, type Product } from "@/lib/catalog";
+import { ProductCardMedia } from "@/components/product-card-media";
+import { cardImages, formatPrice, type Product } from "@/lib/catalog";
 
 export function ProductCard({ product, sizes, priority = false }: { product: Product; sizes: string; priority?: boolean }) {
-  const { name, category, priceCents, currency, badge, image } = product;
+  const { name, priceCents, currency } = product;
   const price = formatPrice(priceCents, currency);
+  const href = `/products/${product.slug}`;
   return (
     <article className="group relative">
-      <Link href={`/products/${product.slug}`} className="block" aria-label={`${name}, ${price}`}>
-        <div className="relative aspect-[4/5] overflow-hidden bg-ink/5">
-          <Image
-            src={image.src}
-            alt={image.alt}
-            width={image.width}
-            height={image.height}
-            sizes={sizes}
-            priority={priority}
-            className="h-full w-full object-cover transition-transform duration-[var(--duration-standard)] ease-[var(--ease-standard)] group-hover:scale-[1.03] motion-reduce:transition-none"
-          />
-          {badge ? (
-            <span className="absolute left-3 top-3 bg-surface-light px-2 py-1 text-caption font-medium uppercase text-ink-on-light">
-              {badge}
-            </span>
-          ) : null}
-        </div>
-        <div className="mt-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div>
-            <h3 className="text-body font-semibold">{name}</h3>
-            <p className="text-body text-muted">{category}</p>
-          </div>
-          <p className="text-body font-medium">{price}</p>
-        </div>
+      <ProductCardMedia
+        images={cardImages(product)}
+        sizes={sizes}
+        priority={priority}
+        href={href}
+        label={`${name}, ${price}`}
+      />
+      <Link href={href} tabIndex={-1} aria-hidden="true" className="flex flex-col gap-4 px-3 pb-16 pt-5">
+        <h3 className="text-body font-normal">{name}</h3>
+        <p className="text-body">{price}</p>
       </Link>
     </article>
   );

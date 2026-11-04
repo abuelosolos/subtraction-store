@@ -1,21 +1,14 @@
-import Image from "next/image";
 import Link from "next/link";
 
-import { Campaign } from "@/components/home/campaign";
+import { CategoryStrip } from "@/components/home/category-strip";
 import { CategoryGrid } from "@/components/home/category-grid";
-import { HeroSnap } from "@/components/home/hero-snap";
+import { HeroMedia, HeroSequence } from "@/components/home/hero-sequence";
 import { Lookbook } from "@/components/home/lookbook";
-import { ProductGrid } from "@/components/home/product-grid";
-import { ProductRail } from "@/components/home/product-rail";
-import { Statement } from "@/components/home/statement";
+import { QuoteStrip } from "@/components/home/quote-strip";
+import { SplitPanels } from "@/components/home/split-panels";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNavbar } from "@/components/site-navbar";
-import {
-  getAccessories,
-  getBestSellers,
-  getHomeCategories,
-  getNewArrivals,
-} from "@/lib/catalog-queries";
+import { getHomeCategories } from "@/lib/catalog-queries";
 
 function ArrowUpRight() {
   return (
@@ -25,75 +18,67 @@ function ArrowUpRight() {
   );
 }
 
-const anchor = (x: number, y: number, w?: number) =>
-  ({ "--x": x, "--y": y, ...(w ? { "--aw": `calc(${w} / 1280 * 100%)` } : {}) }) as React.CSSProperties;
+/* ri = position in the staggered reveal once the entrance video ends (see hero-sequence.css). */
+const anchor = (x: number, y: number, w?: number, ri = 0) =>
+  ({ "--x": x, "--y": y, "--ri": ri, ...(w ? { "--aw": `calc(${w} / 1280 * 100%)` } : {}) }) as React.CSSProperties;
 
-const frame = (x: number, y: number, w: number, h: number) =>
-  ({ "--x": x, "--y": y, "--w": w, "--h": h }) as React.CSSProperties;
+const frame = (x: number, y: number, w: number, h: number, ri = 0) =>
+  ({ "--x": x, "--y": y, "--w": w, "--h": h, "--ri": ri }) as React.CSSProperties;
 
 export default async function Home() {
-  const [categories, newArrivals, bestSellers, accessories] = await Promise.all([
-    getHomeCategories(),
-    getNewArrivals(),
-    getBestSellers(),
-    getAccessories(),
-  ]);
+  const categories = await getHomeCategories();
 
   return (
     <>
-      <SiteNavbar />
-      <main>
-        <HeroSnap />
+      <CategoryStrip items={categories} />
+      <SiteNavbar withStrip />
+      {/* Above the fixed strip (z-index) so the page slides over it; margin (not padding) leaves the strip room so main never sits over its clicks. */}
+      <main className="relative z-[1] mt-[var(--strip-h)]">
         {/* Hero: positions are in the 1280x670 Figma frame, anchored to the photo. Annotations show from md up; mobile shows the photo only. */}
-        <section id="hero" aria-label="Hero" className="hero-overlay">
-          <Image
-            src="/images/hero/hero.webp"
+        <HeroSequence id="hero" aria-label="Hero" className="hero-overlay">
+          <HeroMedia
+            poster="/images/hero/hero.webp"
             alt="Model in reflective sports sunglasses and a black high-neck puffer jacket on a white ground"
-            width={2560}
-            height={1340}
-            sizes="(min-width: 1280px) 1280px, 100vw"
-            priority
-            className="hero-overlay-media"
+            entranceSrc="/videos/hero/hero-entrance.mp4"
+            loopSrc="/videos/hero/hero-loop.mp4"
           />
 
-          {/* Phones only: wordmark, write-up and buttons under the photo. */}
-          <div className="relative z-10 flex flex-1 flex-col justify-end gap-5 px-[var(--gutter)] pb-12 pt-8 md:hidden">
-            <h1 className="font-accent text-[clamp(2.25rem,12vw,3.5rem)] leading-none font-medium uppercase">
-              SUBTRACTION
-            </h1>
+          {/* Phones only: write-up and buttons under the photo (the wordmark stays as a screen-reader h1). */}
+          <div data-reveal style={{ "--ri": 0 } as React.CSSProperties} className="relative z-10 flex flex-1 flex-col justify-start gap-5 px-[var(--gutter)] pb-12 pt-6 md:hidden">
+            <h1 className="sr-only">SUBTRACTION</h1>
             <p className="font-accent max-w-[26rem] text-body font-medium text-muted">
               At some point the closet got full and nothing felt right. That was the problem. We
               built the answer.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link href="/collections" className="btn btn-inverse">Explore Collection</Link>
-              <Link href="/story" className="btn btn-outline">Our Story</Link>
+              <Link href="/collections" data-hero-click="explore_collection" className="btn btn-inverse">Explore Collection</Link>
+              <Link href="/story" data-hero-click="our_story" className="btn btn-outline">Our Story</Link>
             </div>
           </div>
-          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "8%", "--fy": "14%", "--fdur": "6s", "--fdelay": "0s" } as React.CSSProperties}>+</span>
-          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "84%", "--fy": "11%", "--fdur": "8s", "--fdelay": "1s" } as React.CSSProperties}>−</span>
-          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "90%", "--fy": "46%", "--fdur": "7s", "--fdelay": "2s" } as React.CSSProperties}>+</span>
-          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "6%", "--fy": "58%", "--fdur": "9s", "--fdelay": "0.5s" } as React.CSSProperties}>−</span>
-          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "76%", "--fy": "72%", "--fdur": "6.5s", "--fdelay": "1.5s" } as React.CSSProperties}>+</span>
-          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "18%", "--fy": "86%", "--fdur": "8.5s", "--fdelay": "2.5s" } as React.CSSProperties}>−</span>
-          <span aria-hidden="true" className="hero-float md:hidden" style={{ "--fx": "50%", "--fy": "92%", "--fdur": "7.5s", "--fdelay": "0.8s" } as React.CSSProperties}>+</span>
+          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "8%", "--fy": "14%", "--fdur": "6s", "--fdelay": "0s" } as React.CSSProperties}>+</span>
+          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "84%", "--fy": "11%", "--fdur": "8s", "--fdelay": "1s" } as React.CSSProperties}>−</span>
+          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "90%", "--fy": "46%", "--fdur": "7s", "--fdelay": "2s" } as React.CSSProperties}>+</span>
+          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "6%", "--fy": "58%", "--fdur": "9s", "--fdelay": "0.5s" } as React.CSSProperties}>−</span>
+          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "76%", "--fy": "72%", "--fdur": "6.5s", "--fdelay": "1.5s" } as React.CSSProperties}>+</span>
+          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "18%", "--fy": "86%", "--fdur": "8.5s", "--fdelay": "2.5s" } as React.CSSProperties}>−</span>
+          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "50%", "--fy": "92%", "--fdur": "7.5s", "--fdelay": "0.8s" } as React.CSSProperties}>+</span>
 
           {/* Left: brand statement */}
-          <div className="hero-anchor" style={anchor(35, 456, 308)}>
+          <div data-reveal className="hero-anchor" style={anchor(35, 456, 308, 1)}>
             <div className="flex flex-col items-start gap-[14px]">
             <h2 className="font-display text-[1.667em] leading-[1.1] font-normal">WALK IN THE DARK.</h2>
             <p className="font-accent text-[1em] font-medium text-muted max-lg:hidden">
               At some point the closet got full and nothing felt right. That was the problem. We
               built the answer.
             </p>
-            <Link href="/story" className="btn btn-primary">
+            <Link href="/story" data-hero-click="our_story" className="btn btn-primary">
               Our Story <ArrowUpRight />
             </Link>
             </div>
           </div>
 
           {/* Right: statement */}
-          <div className="hero-anchor" style={anchor(970, 170, 262)}>
+          <div data-reveal className="hero-anchor" style={anchor(970, 170, 262, 2)}>
             <div className="flex flex-col items-start gap-[14px]">
             <h2 className="font-display text-[1.667em] leading-[1.1] font-normal">Stillness that stands OUT.</h2>
             <p className="font-accent text-[1em] font-medium text-muted max-lg:hidden">
@@ -104,49 +89,35 @@ export default async function Home() {
               <br />
               We&rsquo;re not minimal or not colorful. We&rsquo;re an exceptional difference.
             </p>
-            <a href="#" className="btn btn-ghost">
+            <a href="#" data-hero-click="shop_now" className="btn btn-ghost">
               Shop Now <ArrowUpRight />
             </a>
             </div>
           </div>
 
           {/* Product callout 1: glasses */}
-          <p className="hero-anchor font-accent font-medium" style={anchor(274, 223)}>
+          <p data-reveal className="hero-anchor font-accent font-medium" style={anchor(274, 223, undefined, 3)}>
             Jawbreaker Omission
           </p>
-          <span className="hero-leader" style={frame(268, 246, 193, 49)} aria-hidden="true" />
-          <div className="hero-anchor" style={anchor(214, 286)}>
-            <a href="#" className="btn btn-primary">Add to Cart</a>
+          <span data-reveal className="hero-leader" style={frame(268, 246, 193, 49, 3)} aria-hidden="true" />
+          <div data-reveal className="hero-anchor" style={anchor(214, 286, undefined, 4)}>
+            <a href="#" data-hero-click="add_to_cart" className="btn btn-primary">Add to Cart</a>
           </div>
 
           {/* Product callout 2: jacket */}
-          <p className="hero-anchor font-accent font-medium" style={anchor(868, 442)}>
+          <p data-reveal className="hero-anchor font-accent font-medium" style={anchor(868, 442, undefined, 5)}>
             Louche high neck puffer jacket
           </p>
-          <span className="hero-leader hero-leader-flip" style={frame(854, 466, 192, 49)} aria-hidden="true" />
-          <div className="hero-anchor" style={anchor(992, 507)}>
-            <a href="#" className="btn btn-primary">Add to Cart</a>
+          <span data-reveal className="hero-leader hero-leader-flip" style={frame(854, 466, 192, 49, 5)} aria-hidden="true" />
+          <div data-reveal className="hero-anchor" style={anchor(992, 507, undefined, 6)}>
+            <a href="#" data-hero-click="add_to_cart" className="btn btn-primary">Add to Cart</a>
           </div>
-        </section>
+        </HeroSequence>
 
-        <CategoryGrid categories={categories} />
-        <ProductRail
-          id="arrivals-heading"
-          title="New arrivals"
-          products={newArrivals}
-          linkHref="/new-arrivals"
-        />
-        <Campaign />
-        <ProductRail
-          id="bestsellers-heading"
-          title="Best sellers"
-          products={bestSellers}
-          linkLabel="Shop best sellers"
-          padTop
-        />
-        <ProductGrid id="accessories-heading" title="Accessories" products={accessories} />
+        <QuoteStrip />
+        <SplitPanels />
+        <CategoryGrid />
         <Lookbook />
-        <Statement />
       </main>
       <SiteFooter />
     </>

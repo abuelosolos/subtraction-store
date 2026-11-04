@@ -7,7 +7,8 @@
  *   <a class="btn btn-ghost">Shop Now</a>
  *   <button class="btn btn-inverse btn-block btn-lg">Create account</button>
  *
- *   <button class="btn btn-outline btn-lg">Save</button>   (outlined, for dark surfaces)
+ *   <button class="btn btn-outline btn-lg">Save</button>   (outlined; follows the surface)
+ *   <a class="btn btn-on-image">Shop now</a>   (frosted white outline, over photographs)
  *
  * Hover pattern (all variants): the fill swaps to the opposite tone and the
  * border stays visible, so the change reads on both dark and light surfaces.
@@ -52,21 +53,18 @@
   --btn-ghost-hover-border: var(--color-surface-dark);
 
   /* inverse: light fill, for dark surfaces (landing CTA, auth submit) */
-  --btn-inverse-bg: var(--color-surface-light);
-  --btn-inverse-ink: var(--color-ink-on-light);
-  --btn-inverse-border: var(--color-surface-light);
-  --btn-inverse-hover-bg: var(--color-surface-dark);
-  --btn-inverse-hover-ink: var(--color-ink-on-dark);
-  --btn-inverse-hover-border: var(--color-surface-light);
   --btn-inverse-shadow: none; /* auth submit uses var(--shadow-cta) */
 
   /* outline: secondary action on dark surfaces (product page "Save") */
-  --btn-outline-bg: transparent;
-  --btn-outline-ink: var(--color-ink-on-dark);
-  --btn-outline-border: var(--color-line-on-dark);
-  --btn-outline-hover-bg: var(--color-surface-light);
-  --btn-outline-hover-ink: var(--color-ink-on-light);
-  --btn-outline-hover-border: var(--color-surface-light);
+
+  /* on-image: white outline over a photograph (split panels) */
+  --btn-on-image-bg: var(--color-overlay-ghost); /* faint white glass over the blur */
+  --btn-on-image-blur: blur(12px) saturate(1.3);
+  --btn-on-image-ink: var(--color-ink-on-dark);
+  --btn-on-image-border: var(--color-ink-on-dark);
+  --btn-on-image-hover-bg: var(--color-surface-light);
+  --btn-on-image-hover-ink: var(--color-ink-on-light);
+  --btn-on-image-hover-border: var(--color-surface-light);
 }
 
 @layer components {
@@ -131,23 +129,37 @@
     --btn-hover-border: var(--btn-ghost-hover-border);
   }
 
+  /* inverse and outline follow the surface they sit on (--ink / --surface /
+     --line are contextual, so they must be read here, not on :root). */
   .btn-inverse {
-    --btn-bg: var(--btn-inverse-bg);
-    --btn-ink: var(--btn-inverse-ink);
-    --btn-border: var(--btn-inverse-border);
-    --btn-hover-bg: var(--btn-inverse-hover-bg);
-    --btn-hover-ink: var(--btn-inverse-hover-ink);
-    --btn-hover-border: var(--btn-inverse-hover-border);
+    --btn-bg: var(--ink);
+    --btn-ink: var(--surface);
+    --btn-border: var(--ink);
+    --btn-hover-bg: var(--surface);
+    --btn-hover-ink: var(--ink);
+    --btn-hover-border: var(--ink);
     --btn-shadow: var(--btn-inverse-shadow);
   }
 
   .btn-outline {
-    --btn-bg: var(--btn-outline-bg);
-    --btn-ink: var(--btn-outline-ink);
-    --btn-border: var(--btn-outline-border);
-    --btn-hover-bg: var(--btn-outline-hover-bg);
-    --btn-hover-ink: var(--btn-outline-hover-ink);
-    --btn-hover-border: var(--btn-outline-hover-border);
+    --btn-bg: transparent;
+    --btn-ink: var(--ink);
+    --btn-border: var(--line);
+    --btn-hover-bg: var(--ink);
+    --btn-hover-ink: var(--surface);
+    --btn-hover-border: var(--ink);
+  }
+
+  /* Frosted: the photo behind the button is blurred and shifts as you scroll. */
+  .btn-on-image {
+    -webkit-backdrop-filter: var(--btn-on-image-blur);
+    backdrop-filter: var(--btn-on-image-blur);
+    --btn-bg: var(--btn-on-image-bg);
+    --btn-ink: var(--btn-on-image-ink);
+    --btn-border: var(--btn-on-image-border);
+    --btn-hover-bg: var(--btn-on-image-hover-bg);
+    --btn-hover-ink: var(--btn-on-image-hover-ink);
+    --btn-hover-border: var(--btn-on-image-hover-border);
   }
 
   .btn-lg {

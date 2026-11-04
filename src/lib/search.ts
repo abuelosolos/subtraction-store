@@ -4,6 +4,7 @@ export type SearchItem = {
   slug: string;
   name: string;
   category: string;
+  categorySlug: string;
   priceCents: number;
   currency: string;
   stock: number;

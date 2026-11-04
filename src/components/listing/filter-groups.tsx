@@ -2,14 +2,72 @@
 
 import { useId, useState } from "react";
 
-import type { Facet, FilterKey } from "@/lib/product-filters";
+import { ChevronDownIcon } from "@/components/ui/icons";
+import { SORT_OPTIONS, type Facet, type FilterKey, type SortKey } from "@/lib/product-filters";
 
-function PlusIcon() {
+/** An on/off row (In stock only, Best sellers). */
+export function SwitchRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+}) {
   return (
-    <svg className="filter-plus" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
-      <path d="M2 8h12" />
-      <path className="filter-plus-v" d="M8 2v12" />
-    </svg>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      className="filter-switch"
+      onClick={() => onChange(!checked)}
+    >
+      <span>{label}</span>
+      <span className="filter-switch-track" aria-hidden="true">
+        <span className="filter-switch-knob" />
+      </span>
+    </button>
+  );
+}
+
+/** Sort By: a disclosure group like the facets, holding a radio list. */
+export function SortGroup({ value, onChange }: { value: SortKey; onChange: (next: SortKey) => void }) {
+  const id = useId();
+  const [open, setOpen] = useState(value !== "");
+  return (
+    <section className="filter-group">
+      <h3>
+        <button
+          type="button"
+          className="filter-trigger"
+          aria-expanded={open}
+          aria-controls={`${id}-panel`}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span>Sort by</span>
+          <ChevronDownIcon className="filter-chevron" size={16} />
+        </button>
+      </h3>
+      <div id={`${id}-panel`} className="filter-panel" hidden={!open}>
+        <ul>
+          {SORT_OPTIONS.map((o) => (
+            <li key={o.value}>
+              <label className="filter-option">
+                <input
+                  type="radio"
+                  name={`${id}-sort`}
+                  checked={value === o.value}
+                  onChange={() => onChange(o.value)}
+                  className="size-4 accent-[var(--ink)]"
+                />
+                <span>{o.label}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -40,7 +98,7 @@ function Group({
             {facet.label}
             {selectedCount > 0 ? <span className="ml-2 text-muted">({selectedCount})</span> : null}
           </span>
-          <PlusIcon />
+          <ChevronDownIcon className="filter-chevron" size={16} />
         </button>
       </h3>
       <div id={`${id}-panel`} className="filter-panel" hidden={!open}>
@@ -86,15 +144,19 @@ function Group({
 export function FilterGroups({
   facets,
   onToggle,
+  children,
 }: {
   facets: Facet[];
   onToggle: (key: FilterKey, value: string) => void;
+  /** Extra groups after the facets (Sort by). */
+  children?: React.ReactNode;
 }) {
   return (
     <div>
       {facets.map((facet) => (
         <Group key={facet.key} facet={facet} onToggle={onToggle} />
       ))}
+      {children}
     </div>
   );
 }

@@ -20,6 +20,12 @@
     min-height: 100vh;
     background-color: var(--color-surface-dark);
     color: var(--color-ink-on-dark);
+    /* The shop is white; admin stays dark, so re-declare the contextual roles. */
+    --surface: var(--color-surface-dark);
+    --ink: var(--color-ink-on-dark);
+    --muted: var(--color-muted-on-dark);
+    --subtle: var(--color-subtle-on-dark);
+    --line: var(--color-line-on-dark);
   }
 
   .admin-sidebar {

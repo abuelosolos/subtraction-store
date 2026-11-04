@@ -1,16 +1,21 @@
 /*
- * Listing filters (category and gender views). Nike-style: a left column of
- * disclosure groups, each opened by a plus that turns into a minus. Below lg
- * the same groups live in a native <dialog> that slides in from the left.
+ * Listing filters (category and gender views). Gucci-style "Filter and sort" panel:
+ * a native <dialog> that slides in from the right, with on/off switches, chevron
+ * disclosure groups and a Sort by group.
  * Tokens only; borders are the existing 0.3px hairline.
  */
 @layer components {
+  /* Secondary grey for the dividers, softer than the black --line. */
+  .filter-drawer {
+    --filter-rule: color-mix(in srgb, var(--ink) 18%, transparent);
+  }
+
   .filter-group {
-    border-bottom: var(--border-width-hairline) solid var(--line);
+    border-bottom: var(--border-width-default) solid var(--filter-rule);
   }
 
   .filter-group:first-of-type {
-    border-top: var(--border-width-hairline) solid var(--line);
+    border-top: var(--border-width-default) solid var(--filter-rule);
   }
 
   .filter-trigger {
@@ -25,17 +30,85 @@
     font-weight: 600;
   }
 
-  .filter-plus {
+  .filter-chevron {
     flex-shrink: 0;
-  }
-
-  .filter-plus-v {
-    transform-origin: center;
     transition: transform var(--duration-standard) var(--ease-standard);
   }
 
-  .filter-trigger[aria-expanded="true"] .filter-plus-v {
-    transform: scaleY(0);
+  .filter-trigger[aria-expanded="true"] .filter-chevron {
+    transform: rotate(180deg);
+  }
+
+  .filter-title {
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* On/off rows in a light panel above the groups. */
+  .filter-switches {
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 1rem;
+    background-color: color-mix(in srgb, var(--ink) 4%, transparent);
+  }
+
+  .filter-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 2.75rem;
+    text-align: left;
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+  }
+
+  .filter-switch-track {
+    display: inline-flex;
+    align-items: center;
+    width: 2.75rem;
+    height: 1.5rem;
+    padding: 0.1875rem;
+    border: 1px solid var(--ink);
+    border-radius: var(--radius-pill);
+    transition: background-color var(--duration-standard) var(--ease-standard);
+  }
+
+  .filter-switch-knob {
+    width: 1rem;
+    height: 1rem;
+    border-radius: var(--radius-pill);
+    background-color: var(--ink);
+    transition:
+      transform var(--duration-standard) var(--ease-standard),
+      background-color var(--duration-standard) var(--ease-standard);
+  }
+
+  .filter-switch[aria-checked="true"] .filter-switch-track {
+    background-color: var(--ink);
+  }
+
+  .filter-switch[aria-checked="true"] .filter-switch-knob {
+    transform: translateX(1.1875rem);
+    background-color: var(--surface);
+  }
+
+  /* Round black close button in the panel's top-right corner, like the reference. */
+  .filter-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-ink-on-light);
+    color: var(--color-surface-light);
   }
 
   .filter-panel {
@@ -99,16 +172,16 @@
   /* Mobile drawer: a native modal <dialog> gives focus trap + Escape. */
   .filter-drawer {
     position: fixed;
-    inset: 0 auto 0 0;
-    width: min(22rem, 90vw);
+    inset: 0 0 0 auto;
+    width: min(32rem, 100vw);
     max-width: none;
     height: 100%;
     max-height: none;
     margin: 0;
     padding: 0;
     border: 0;
-    background-color: var(--color-surface-dark);
-    color: var(--color-ink-on-dark);
+    background-color: var(--color-surface-light);
+    color: var(--color-ink-on-light);
   }
 
   .filter-drawer:not([open]) {
@@ -122,12 +195,13 @@
   }
 
   .filter-drawer::backdrop {
-    background-color: var(--color-overlay-panel);
+    background-color: var(--color-overlay-scrim);
+    backdrop-filter: blur(6px);
   }
 
   @keyframes filter-drawer-in {
     from {
-      transform: translateX(-100%);
+      transform: translateX(100%);
     }
     to {
       transform: translateX(0);
@@ -144,6 +218,30 @@
 
     .filter-size {
       min-height: 2.75rem;
+    }
+  }
+}
+
+/* Phones: the panel is a full-width sheet that slides up from the bottom. */
+@layer components {
+  @media (max-width: 47.99rem) {
+    .filter-drawer {
+      inset: auto 0 0 0;
+      width: 100%;
+      height: 92dvh;
+    }
+
+    .filter-drawer[open] {
+      animation-name: filter-sheet-in;
+    }
+  }
+
+  @keyframes filter-sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
     }
   }
 }

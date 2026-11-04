@@ -5,13 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { CloseIcon, MenuIcon } from "@/components/ui/icons";
-import { authClient } from "@/lib/auth-client";
 import { cartCount, useCart } from "@/lib/cart-store";
 import { primaryLinks } from "@/lib/nav-items";
-import { useSignOut } from "@/lib/use-sign-out";
 
 /**
- * Phone navigation: a hamburger button that opens a drawer from the right with
+ * Phone navigation: a hamburger button that opens a full-width sheet sliding up from the bottom with
  * every item the bar drops below md. A native modal <dialog> gives focus trap
  * and Escape; open state is tied to the path so navigating closes it.
  */
@@ -21,10 +19,7 @@ export function MobileMenu() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === pathname;
-  const { data: session } = authClient.useSession();
-  const user = session?.user;
   const cartItems = cartCount(useCart());
-  const signOut = useSignOut();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -66,7 +61,7 @@ export function MobileMenu() {
         <div className="mobile-menu-head">
           <span className="font-brand text-brand font-bold">SUBTRACTION.</span>
           <button type="button" className="mobile-menu-close" onClick={close} aria-label="Close menu">
-            <CloseIcon />
+            <CloseIcon size={20} />
           </button>
         </div>
 
@@ -90,48 +85,6 @@ export function MobileMenu() {
             </li>
           </ul>
 
-          {user ? (
-            <>
-              <div className="mobile-menu-group">
-                <p className="mobile-menu-heading">Profile</p>
-                <ul>
-                  <li>
-                    <Link href="/account/settings" className="mobile-menu-item" onClick={close}>
-                      Account settings
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/account/addresses" className="mobile-menu-item" onClick={close}>
-                      Addresses
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <ul className="mobile-menu-group">
-                <li>
-                  <Link href="/account" className="mobile-menu-item" onClick={close}>Orders</Link>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    className="mobile-menu-item"
-                    onClick={async () => {
-                      close();
-                      await signOut();
-                    }}
-                  >
-                    Sign out
-                  </button>
-                </li>
-              </ul>
-            </>
-          ) : (
-            <ul className="mobile-menu-group">
-              <li>
-                <Link href="/login" className="mobile-menu-item" onClick={close}>Sign in</Link>
-              </li>
-            </ul>
-          )}
         </nav>
       </dialog>
     </>

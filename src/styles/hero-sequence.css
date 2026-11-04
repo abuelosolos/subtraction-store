@@ -1,0 +1,71 @@
+/*
+ * Hero video sequence. The media box keeps the poster's 2560x1340 ratio so the
+ * poster, entrance and loop videos occupy exactly the same space (no layout shift).
+ */
+
+.hero-media {
+  position: relative;
+  z-index: 0;
+  flex: none;
+  width: 100%;
+  aspect-ratio: 2560 / 1340;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent);
+  mask-image: linear-gradient(to bottom, black 75%, transparent);
+}
+
+@media (min-width: 48rem) {
+  .hero-media {
+    height: 100%;
+    aspect-ratio: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+.hero-media > img,
+.hero-media > video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+
+.hero-media > video {
+  opacity: 0;
+  transition: opacity 400ms var(--ease-standard, ease);
+}
+
+.hero-media > video[data-on="true"] {
+  opacity: 1;
+}
+
+/* Overlays: hidden until the entrance finishes, then staggered in by --ri. */
+[data-overlays="off"] [data-reveal] {
+  opacity: 0;
+  translate: 0 10px;
+  scale: 0.98;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-reveal] {
+  opacity: var(--reveal-opacity, 1);
+  translate: 0 0;
+  scale: 1;
+  transition:
+    opacity 500ms var(--ease-standard, ease),
+    translate 500ms var(--ease-standard, ease),
+    scale 500ms var(--ease-standard, ease),
+    visibility 0s;
+  transition-delay: calc(var(--ri, 0) * 100ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-media > video,
+  [data-reveal] {
+    transition: none;
+  }
+}

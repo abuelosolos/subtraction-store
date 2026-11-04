@@ -50,6 +50,8 @@ Space Grotesk for the wordmark.
 
 ## Colours
 
+> **Update (white storefront).** The shop is now a plain white UI: black and white are inverted. `--color-surface-light` is `#fff`; the contextual roles default to the light set, and `.surface-dark` renders white (the class name is kept so call sites don't change). Real dark survives only in `/admin` (`.admin-shell` re-declares the dark roles). `.btn-inverse` / `.btn-outline` follow the surface they sit on; `.btn-on-image` is a white outline for buttons over photographs. The navbar's solid state is white. Home order is now hero, split panels (`SplitPanels`: Men / Women), categories, ... and hero snap-scrolling was removed. Tables below that describe dark sections are superseded by this note.
+
 Names are roles. Fixed tokens are in `@theme`; contextual ones follow the wrapper class.
 **One dark** (`#0B0B0B`) is used for page, navbar, auth and dark buttons. Figma's `#030302`,
 `#141414` and `#1E1D1D` were converged into it.
@@ -175,6 +177,8 @@ only does an optimistic redirect for `/checkout/*`.
 
 ## Navbar
 
+**Category strip (home only).** `CategoryStrip` (`src/components/home/category-strip.tsx`) sits at the top edge of the hero (absolute, over the photo, `--color-overlay-strip` = 30% black, dark text) above the fixed navbar: caption-size "Shop <category>" links from `getHomeCategories()`, sliding vertically every 5s, with chevrons for previous/next (pauses on hover/focus). The navbar is lowered by `--navbar-top` (set by `SiteNavbar withStrip` from scroll position) so the strip scrolls away and the bar pins to the top; every other page leaves `--navbar-top` unset (0).
+
 Transparent and dark-inked over the hero; a solid dark bar with light ink over darker sections.
 Fixed to the top, 61px high. State is set with `data-navbar="hero" | "solid"` on `.navbar`
 (CSS in `src/styles/navbar.css`); the component that renders it decides when to switch (for
@@ -260,6 +264,13 @@ Route `/categories/[slug]` (`src/app/categories/[slug]/page.tsx`), statically ge
 `categories` table, 404 for unknown slugs. Same `ProductListing` layout as New arrivals, title is
 the category name, products newest first. Linked from the homepage category tiles and the product
 page breadcrumb. There is no `/categories` index yet (most categories have no tile image).
+
+**Gucci-style layout.** A URL with no search params opens a full-screen `CategoryHero` (category
+image, else first product image) under a transparent, blurred navbar (`heroTone="dark"`, no strip);
+the bar turns white once the hero scrolls away. Department tabs (`?gender=men|women`) open the
+hero-less top: solid white nav, `CategoryTabs` row, `N items` + Filter toolbar, then a seamless
+bordered grid. Cards (`ProductCard`) are a cover-fit tile with name and price in a strip below.
+The Filter button opens the drawer at every width; there is no sort control yet.
 
 ## Nike reference notes
 
@@ -360,15 +371,18 @@ punctuation and spacing and accepts simple plurals. Escape, outside click, blur 
 ## Listing filters
 
 Category pages (`/categories/[slug]`) and the gender views (`/categories/men`, `/categories/women`)
-use `FilterableListing`. From md: a 14rem (15rem from lg) left column of disclosure groups (Size, Gender, Colour,
-Collection), each a full-width row with a plus icon that turns into a minus when open
-(`aria-expanded`), separated by hairline rules; groups holding a selection start open and show a
-count. Sizes are a 3-column grid of toggle buttons (`aria-pressed`); the rest are checkboxes with a
-live count. Below md the same groups sit in a native `<dialog>` that slides in from the left, with
-a "Show N pieces" button. Styles: `src/styles/listing-filters.css`; logic: `src/lib/product-filters.ts`.
+use `FilterableListing`. A "Filter (n)" toolbar button opens a Gucci-style "Filter and sort" panel:
+a native `<dialog>` that slides in from the right (32rem max) over a dimmed, blurred page
+(`--color-overlay-scrim`). Top to bottom: a round black close button, the uppercase title with a
+"Clear all" link, a light block of two switches (In stock only, Best sellers; `role="switch"`),
+disclosure groups with a chevron that flips when open (Category, Size, Gender, Colour, Collection,
+then Sort by), and a full-width black "SHOW N ITEMS" button. Groups holding a selection start open
+and show a count. Sizes are a 3-column grid of toggle buttons (`aria-pressed`); the rest are
+checkboxes with a live count; Sort by is a radio list (newest first, price low to high, price high
+to low). Styles: `src/styles/listing-filters.css`; logic: `src/lib/product-filters.ts`.
 
 Behaviour: filters apply instantly and are mirrored in the URL as repeated params
-(`?gender=men&size=M&size=L`). OR within a group, AND across groups; a selected gender also shows
+(`?gender=men&size=M&size=L`); the switches and sort add `stock=1`, `best=1` and `sort=price-asc|price-desc`. Sort is not counted as a filter. OR within a group, AND across groups; a selected gender also shows
 unisex pieces. The heading follows the gender: "Men's Footwear" with only Men selected, "Footwear"
 with both or none; gender views read "Men's" / "Women's" and "All products" when both or none.
 `gender=any` on a gender view is the explicit cleared state. Groups with no values are hidden.
@@ -378,6 +392,17 @@ single-category page). On the Men's / Women's views, with only gender selected, 
 by one scroll-snap rail per category in `sort_order` (the men/women catch-all categories last), each
 with a "View all" link to `/categories/[slug]?gender=...`; ticking any other filter switches back
 to the product grid. Choosing exactly one category names the page after it ("Men's Footwear").
+
+## Phone search
+
+Below md, the navbar's Search icon opens `MobileSearch` (`src/components/mobile-search.tsx`): a
+full-screen white native `<dialog>` that slides up from the bottom (400ms). The field expands out of
+the icon's width (clip-path, 250ms, 120ms delay) and takes focus once the slide ends. Top to
+bottom: the SUBTRACTION. logo and an underlined "Close"; the underlined field (16px text, no iOS
+zoom); "Trending searches" (the first four categories in the index, underlined links); "Suggested"
+with a scroll-snap row of eight newest items. Typing swaps those for a two-column grid of
+results. md and up keeps the inline field. Styles: `.mobile-search*` in `src/styles/navbar.css`.
+No animation under `prefers-reduced-motion`.
 
 ## Navbar glass (over the hero)
 

@@ -57,6 +57,13 @@
       "when": 1791714375799,
       "tag": "0007_deep_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793824090243,
+      "tag": "0008_large_iron_fist",
+      "breakpoints": true
     }
   ]
 }

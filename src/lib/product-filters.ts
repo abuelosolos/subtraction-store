@@ -1,11 +1,23 @@
 // Listing filters (size, gender, colour, collection). Pure and DB-free: the
 // page passes every product in scope, the client filters instantly and keeps
 // the selection in the URL as repeated params (?gender=men&size=M&size=L).
-import type { Product } from "@/lib/catalog";
+import { stockState, type Product } from "@/lib/catalog";
 
 export const FILTER_KEYS = ["gender", "category", "size", "color", "collection"] as const;
 export type FilterKey = (typeof FILTER_KEYS)[number];
-export type Filters = Record<FilterKey, string[]>;
+export const SORT_OPTIONS = [
+  { value: "", label: "Newest first" },
+  { value: "price-asc", label: "Price: low to high" },
+  { value: "price-desc", label: "Price: high to low" },
+] as const;
+export type SortKey = (typeof SORT_OPTIONS)[number]["value"];
+
+/** List filters plus the two on/off switches and the sort order. */
+export type Filters = Record<FilterKey, string[]> & {
+  inStock: boolean;
+  bestSeller: boolean;
+  sort: SortKey;
+};
 
 export const FILTER_LABELS: Record<FilterKey, string> = {
   category: "Category",
@@ -18,7 +30,16 @@ export const FILTER_LABELS: Record<FilterKey, string> = {
 /** Display order of the groups in the sidebar. */
 export const FILTER_ORDER: readonly FilterKey[] = ["category", "size", "gender", "color", "collection"];
 
-export const EMPTY_FILTERS: Filters = { gender: [], category: [], size: [], color: [], collection: [] };
+export const EMPTY_FILTERS: Filters = {
+  gender: [],
+  category: [],
+  size: [],
+  color: [],
+  collection: [],
+  inStock: false,
+  bestSeller: false,
+  sort: "",
+};
 
 const GENDER_LABEL: Record<string, string> = { men: "Men", women: "Women" };
 const MAX_VALUES = 20;
@@ -38,7 +59,7 @@ const valuesOf = (src: ParamSource, key: string): string[] => {
  * listing is dropped when `scope` is given.
  */
 export function parseFilters(src: ParamSource, scope?: readonly Product[]): Filters {
-  const out: Filters = { gender: [], category: [], size: [], color: [], collection: [] };
+  const out: Filters = { ...EMPTY_FILTERS, gender: [], category: [], size: [], color: [], collection: [] };
   for (const key of FILTER_KEYS) {
     const seen = new Set<string>();
     for (const raw of valuesOf(src, key)) {
@@ -50,6 +71,10 @@ export function parseFilters(src: ParamSource, scope?: readonly Product[]): Filt
     }
     out[key] = [...seen];
   }
+  out.inStock = valuesOf(src, "stock").includes("1");
+  out.bestSeller = valuesOf(src, "best").includes("1");
+  const sort = valuesOf(src, "sort")[0];
+  out.sort = SORT_OPTIONS.find((o) => o.value && o.value === sort)?.value ?? "";
   if (!scope) return out;
 
   const offered = optionValues(scope);
@@ -62,11 +87,15 @@ export function parseFilters(src: ParamSource, scope?: readonly Product[]): Filt
 export function serializeFilters(filters: Filters): string {
   const qs = new URLSearchParams();
   for (const key of FILTER_KEYS) for (const v of filters[key]) qs.append(key, v);
+  if (filters.inStock) qs.set("stock", "1");
+  if (filters.bestSeller) qs.set("best", "1");
+  if (filters.sort) qs.set("sort", filters.sort);
   return qs.toString();
 }
 
+/** Selected values plus the switches. The sort order is not a filter. */
 export const activeFilterCount = (f: Filters) =>
-  FILTER_KEYS.reduce((n, key) => n + f[key].length, 0);
+  FILTER_KEYS.reduce((n, key) => n + f[key].length, 0) + (f.inStock ? 1 : 0) + (f.bestSeller ? 1 : 0);
 
 const matches = (p: Product, key: FilterKey, selected: string[]): boolean => {
   if (selected.length === 0) return true;
@@ -86,10 +115,16 @@ const matches = (p: Product, key: FilterKey, selected: string[]): boolean => {
 };
 
 const matchesAll = (p: Product, f: Filters, except?: FilterKey) =>
+  (!f.inStock || stockState(p.stock) !== "sold-out") &&
+  (!f.bestSeller || p.isBestSeller) &&
   FILTER_KEYS.every((key) => key === except || matches(p, key, f[key]));
 
+/** Filter, then sort. The default order is whatever the page passed in (newest first). */
 export function applyFilters(products: readonly Product[], filters: Filters): Product[] {
-  return products.filter((p) => matchesAll(p, filters));
+  const out = products.filter((p) => matchesAll(p, filters));
+  if (filters.sort === "price-asc") out.sort((a, b) => a.priceCents - b.priceCents);
+  if (filters.sort === "price-desc") out.sort((a, b) => b.priceCents - a.priceCents);
+  return out;
 }
 
 const CLOTHING_ORDER = ["xxs", "xs", "s", "m", "l", "xl", "xxl", "2xl", "3xl", "4xl"];
@@ -181,7 +216,42 @@ export function listingTitle(categoryName: string | null, genders: readonly stri
   return prefix ?? "All products";
 }
 
-export type ProductGroup = { slug: string; name: string; products: Product[] };
+export type Crumb = { label: string; href?: string };
+
+/**
+ * Breadcrumb for a product page. Men's/women's products stay inside their
+ * department (Home / Men / Men's Jackets / Name); the all-genders category page
+ * is only reachable from the sidebar. Unisex products keep Home / Category / Name.
+ */
+export function productCrumbs(p: {
+  name: string;
+  category: string;
+  categorySlug: string;
+  gender: string;
+}): Crumb[] {
+  const home: Crumb = { label: "Home", href: "/" };
+  const current: Crumb = { label: p.name };
+  if (p.gender !== "men" && p.gender !== "women") {
+    return [home, { label: p.category, href: `/categories/${p.categorySlug}` }, current];
+  }
+  const dept: Crumb = {
+    label: p.gender === "men" ? "Men" : "Women",
+    href: `/categories/${p.gender}`,
+  };
+  // The catch-all men/women categories are the department itself.
+  if (p.categorySlug === "men" || p.categorySlug === "women") return [home, dept, current];
+  return [
+    home,
+    dept,
+    {
+      label: listingTitle(p.category, [p.gender]),
+      href: `/categories/${p.categorySlug}?gender=${p.gender}`,
+    },
+    current,
+  ];
+}
+
+export type ProductGroup ={ slug: string; name: string; products: Product[] };
 
 /**
  * Group products by category for the Men's / Women's landing rails. Groups

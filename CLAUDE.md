@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Next.js (App Router) + TypeScript + Tailwind v4 + Better Auth + Drizzle ORM + Neon Postgres. Storefront, cart/saved, Paystack checkout, orders, account area and an `/admin` back office (orders, products, categories, stock, fulfilment) exist. Not built: confirmation email, refunds, per-size stock.
+Next.js (App Router) + TypeScript + Tailwind v4 + Better Auth + Drizzle ORM + Neon Postgres. Storefront, cart/saved and an `/admin` back office (orders, products, categories, stock, fulfilment) exist. This is a portfolio demo: customer sign-in/registration, checkout (Paystack), orders and the account area were removed, and the cart's Checkout button is disabled. `/login` is kept, unlinked, only so admins can reach `/admin`.
 
 ## Design system
 
@@ -50,6 +50,7 @@ Catalogue tables are `categories`, `products`, `stock` (`src/db/catalog-schema.t
 - **Stock is a separate 1:1 `stock` table** (`product_id` PK, `quantity >= 0`), not a column on `products`. Every product has a stock row. Never decrement with read-then-write; use one conditional `UPDATE stock SET quantity = quantity - n WHERE product_id = ? AND quantity >= n` (neon-http has no interactive transactions).
 - **Categories are flat**: each product has exactly one `category_id` (FK, `ON DELETE RESTRICT`). Homepage tiles are categories with `show_on_home`, ordered by `sort_order`.
 - **Homepage lists come from data, not hardcoded arrays**: New arrivals = newest by `created_at`; Best sellers = `is_best_seller`; Accessories = category slug `accessories`.
+- **Gallery**: extra angles live in `product_images` (position, kind, src); `products.image_*` stays the card image. Only `getProductBySlug` loads the gallery. `scripts/import-drop-products.ts` imports `drop-products/` folders (converts to webp, inserts, archives other live products).
 - **`products.sizes` is display-only** (`text[]`, empty = one size). Per-size stock needs real variants, which don't exist yet.
 - **Reads live in `src/lib/catalog-queries.ts`**, each with `"use cache"` + `cacheTag("catalog")` + `cacheLife`, all returning the shared `Product` type from `src/lib/catalog.ts` (which stays DB-free). After any write to catalogue or stock, invalidate the `catalog` tag.
 - **Migrations are versioned**: change the schema, then `db:generate`, review the SQL in `./drizzle`, then `db:migrate`. Don't use `db:push` against the shared database.
