@@ -49,6 +49,16 @@ export function HeroSequence({
   );
 }
 
+/** WebM first (decodes where the browser has no H.264, e.g. stock Fedora), then the mp4. */
+function HeroSources({ src, onError }: { src: string; onError: () => void }) {
+  return (
+    <>
+      <source src={src.replace(/\.mp4$/, ".webm")} type="video/webm" />
+      <source src={src} type="video/mp4" onError={onError} />
+    </>
+  );
+}
+
 /** Poster + loop + entrance layers, in the slot the static hero image used to fill. */
 export function HeroMedia({
   poster,
@@ -62,6 +72,9 @@ export function HeroMedia({
   loopSrc: string;
 }) {
   const s = useHeroSequenceState();
+  // The error event fires on the last <source>, not on the <video>, when nothing is playable.
+  const { onError: onEntranceError, ...entranceProps } = s.entranceProps;
+  const { onError: onLoopError, ...loopProps } = s.loopProps;
 
   return (
     <div className="hero-media">
@@ -75,7 +88,6 @@ export function HeroMedia({
       />
       <video
         ref={s.setLoop}
-        src={loopSrc}
         poster={poster}
         loop
         muted
@@ -84,11 +96,12 @@ export function HeroMedia({
         aria-hidden="true"
         tabIndex={-1}
         data-on={s.loopShown}
-        {...s.loopProps}
-      />
+        {...loopProps}
+      >
+        <HeroSources src={loopSrc} onError={onLoopError} />
+      </video>
       <video
         ref={s.setEntrance}
-        src={entranceSrc}
         poster={poster}
         autoPlay
         muted
@@ -97,8 +110,10 @@ export function HeroMedia({
         aria-hidden="true"
         tabIndex={-1}
         data-on={s.entranceReady && s.entranceShown}
-        {...s.entranceProps}
-      />
+        {...entranceProps}
+      >
+        <HeroSources src={entranceSrc} onError={onEntranceError} />
+      </video>
     </div>
   );
 }

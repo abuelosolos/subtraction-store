@@ -366,8 +366,11 @@
     --subtle: var(--color-muted-on-light);
     --line: var(--color-line-on-light);
 
+    /* Every child is absolutely positioned against the hero itself (percent
+       offsets of the 1280x670 frame), so none may sit in a grid area, which
+       has no width when nothing is in flow. */
     & > * {
-      grid-area: 1 / 1;
+      grid-area: auto;
     }
   }
 }

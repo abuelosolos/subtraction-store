@@ -15,12 +15,12 @@
 @media (min-width: 48rem) {
   .hero-media {
     --hero-pos: 50% 30%;
-    position: relative;
-    inset: auto;
-    flex: none;
-    width: 100%;
-    height: 100%;
+    /* Absolute, not relative + height:100%: a percentage height inside the
+       aspect-ratio grid resolves against an auto row and collapses to 0. */
+    position: absolute;
+    inset: 0;
   }
+
 }
 
 .hero-media > img,
