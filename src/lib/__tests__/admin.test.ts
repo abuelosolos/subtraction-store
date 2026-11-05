@@ -14,6 +14,7 @@ import {
   productCreateSchema,
   renameProduct,
   setProductArchived,
+  getAdminProductImages,
   updateProduct,
 } from "@/lib/admin/catalogue";
 import {
@@ -85,6 +86,28 @@ describe("admin validation (pure)", () => {
     expect(productCreateSchema.safeParse({ ...base, initialStock: "-1" }).success).toBe(false);
     expect(productCreateSchema.safeParse({ ...base, gender: "robots" }).success).toBe(false);
     expect(productCreateSchema.safeParse({ ...base, color: "" }).success).toBe(false);
+  });
+
+  const photo = (kind: string, n = 1) => ({
+    kind, src: `/images/products/${kind}-${n}.webp`, width: 800, height: 1000, alt: `${kind} view`,
+  });
+
+  it("gallery: main photo becomes the card image; bad kinds, srcs, counts and main index are rejected", () => {
+    const ok = productCreateSchema.parse({
+      ...base, images: [photo("front"), photo("back")], mainIndex: "1",
+    });
+    expect(ok.images).toHaveLength(2);
+    expect(ok).toMatchObject({ imageSrc: "/images/products/back-1.webp", imageWidth: 800, imageAlt: "back view" });
+
+    expect(productCreateSchema.safeParse({ ...base, images: [photo("top")] }).success).toBe(false);
+    expect(
+      productCreateSchema.safeParse({ ...base, images: [{ ...photo("front"), src: "https://evil.example/a.png" }] }).success,
+    ).toBe(false);
+    expect(productCreateSchema.safeParse({ ...base, images: [photo("front")], mainIndex: 1 }).success).toBe(false);
+    const nine = Array.from({ length: 9 }, (_, i) => photo("item", i));
+    expect(productCreateSchema.safeParse({ ...base, images: nine }).success).toBe(false);
+    // No gallery sent: the flat card image is used as-is.
+    expect(productCreateSchema.parse(base)).toMatchObject({ images: [], imageSrc: "/images/products/x.webp" });
   });
 
   it("category image fields are all-or-none", () => {
@@ -242,6 +265,41 @@ describe.skipIf(!testUrl)("admin data layer (Neon test branch)", () => {
       expect(after).toMatchObject({ slug, name: "Renamed", priceCents: 250_000 });
       expect(await auditCount("product.update", slug)).toBe(1);
       expect(await updateProduct(fx.db, { id: admin }, 2_000_000_000, { ...rest })).toEqual({ ok: false, reason: "not_found" });
+    });
+
+    it("saves a gallery atomically: create, reorder, shrink, main photo follows, not_found writes nothing", async () => {
+      const slug = `${fx.slugPrefix}-gallery`;
+      const shot = (kind: "front" | "side" | "back" | "item", n: number) => ({
+        kind, src: `/images/products/${slug}-${kind}-${n}.webp`, width: 800, height: 1000, alt: `${kind} ${n}`,
+      });
+      const created = await createProduct(fx.db, { id: admin }, {
+        ...input(slug, fx.categoryId), images: [shot("front", 1), shot("side", 1), shot("back", 1)], mainIndex: 1,
+      });
+      expect(created).toEqual({ ok: true, slug });
+      const [p] = await fx.db.select().from(products).where(eq(products.slug, slug));
+      expect((await getAdminProductImages(fx.db, p.id)).map((i) => i.kind)).toEqual(["front", "side", "back"]);
+
+      const { slug: _s, initialStock: _i, ...rest } = input(slug, fx.categoryId);
+      void _s; void _i;
+      // Reorder, retype, replace one and drop one; main moves to the new first photo.
+      const next = [shot("back", 1), shot("front", 2)];
+      const r = await updateProduct(fx.db, { id: admin }, p.id, { ...rest, images: next, mainIndex: 0, imageSrc: next[0].src });
+      expect(r).toMatchObject({ ok: true });
+      if (r.ok) expect(r.previousImageSrcs).toEqual(expect.arrayContaining([shot("side", 1).src, shot("front", 1).src]));
+      const rows = await getAdminProductImages(fx.db, p.id);
+      expect(rows.map((i) => [i.kind, i.src])).toEqual(next.map((i) => [i.kind, i.src]));
+      const [after] = await fx.db.select().from(products).where(eq(products.id, p.id));
+      expect(after.imageSrc).toBe(next[0].src);
+
+      // No images sent leaves the gallery alone.
+      expect(await updateProduct(fx.db, { id: admin }, p.id, { ...rest, name: "Still two" })).toMatchObject({ ok: true });
+      expect(await getAdminProductImages(fx.db, p.id)).toHaveLength(2);
+
+      // Unknown product: not_found, and no gallery rows are created for it.
+      expect(await updateProduct(fx.db, { id: admin }, 2_000_000_000, { ...rest, images: next })).toEqual({
+        ok: false, reason: "not_found",
+      });
+      expect(await getAdminProductImages(fx.db, 2_000_000_000)).toHaveLength(0);
     });
 
     it("renames a product with its own audit row", async () => {

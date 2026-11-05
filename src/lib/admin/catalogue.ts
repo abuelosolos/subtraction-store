@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, ilike, isNull, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
-import { adminAudit, categories, products, stock } from "@/db/schema";
+import { adminAudit, categories, productImages, products, stock } from "@/db/schema";
 import { pgErrorCode, type Db } from "@/lib/order-lifecycle";
 
 const CONTROL = /[\u0000-\u001F\u007F]/g;
@@ -53,6 +53,19 @@ const imageFields = {
   imageAlt: text(1, 200),
 };
 
+/** Photo views, in the order cards cycle them (see CARD_ORDER in src/lib/catalog.ts). */
+export const PHOTO_KINDS = ["front", "side", "back", "item"] as const;
+export const MAX_PHOTOS = 8;
+
+export const galleryItemSchema = z.object({
+  kind: z.enum(PHOTO_KINDS),
+  src: imageFields.imageSrc,
+  width: imageFields.imageWidth,
+  height: imageFields.imageHeight,
+  alt: imageFields.imageAlt,
+});
+export type GalleryItem = z.output<typeof galleryItemSchema>;
+
 const sizesSchema = z
   .string()
   .optional()
@@ -86,19 +99,44 @@ export const productInputSchema = z.object({
   badge: optionalText(30),
   isBestSeller: z.boolean().default(false),
   ...imageFields,
+  /** Full photo gallery in display order. Empty/absent = leave the gallery as it is. */
+  images: z.array(galleryItemSchema).max(MAX_PHOTOS).default([]),
+  /** Which entry of `images` is the main (card) photo. */
+  mainIndex: z.coerce.number().int().min(0).max(MAX_PHOTOS - 1).default(0),
 });
-export type ProductInput = z.output<typeof productInputSchema>;
+
+type WithGallery = z.output<typeof productInputSchema>;
+
+/** With a gallery, the main photo (images[mainIndex]) is the product's card image. */
+function requireValidMain(v: WithGallery, ctx: z.RefinementCtx) {
+  if (v.images.length > 0 && v.mainIndex >= v.images.length) {
+    ctx.addIssue({ code: "custom", path: ["mainIndex"], message: "Choose one of the photos as the main photo" });
+  }
+}
+function syncMainImage<T extends WithGallery>(v: T): T {
+  const main = v.images[v.mainIndex];
+  return main
+    ? { ...v, imageSrc: main.src, imageWidth: main.width, imageHeight: main.height, imageAlt: main.alt }
+    : v;
+}
 
 /** Update: the slug is optional; sending a different one renames the address and keeps the old one as a redirect. */
-export const productUpdateSchema = productInputSchema.extend({ slug: slugSchema.optional() });
+export const productUpdateSchema = productInputSchema
+  .extend({ slug: slugSchema.optional() })
+  .superRefine(requireValidMain)
+  .transform(syncMainImage);
 export type ProductUpdateInput = z.output<typeof productUpdateSchema>;
+export type ProductInput = ProductUpdateInput;
 
 export const productNameSchema = text(2, 120);
 
-export const productCreateSchema = productInputSchema.extend({
-  slug: slugSchema,
-  initialStock: z.coerce.number().int().min(0).max(100_000),
-});
+export const productCreateSchema = productInputSchema
+  .extend({
+    slug: slugSchema,
+    initialStock: z.coerce.number().int().min(0).max(100_000),
+  })
+  .superRefine(requireValidMain)
+  .transform(syncMainImage);
 export type ProductCreateInput = z.output<typeof productCreateSchema>;
 
 export const categoryInputSchema = z
@@ -179,6 +217,21 @@ export async function getAdminProduct(db: Db, id: number) {
   return row ? { ...row.product, quantity: Number(row.quantity) } : null;
 }
 
+/** A product's photos in display order (empty if it only has its card image). */
+export async function getAdminProductImages(db: Db, productId: number) {
+  return db
+    .select({
+      kind: productImages.kind,
+      src: productImages.src,
+      width: productImages.width,
+      height: productImages.height,
+      alt: productImages.alt,
+    })
+    .from(productImages)
+    .where(eq(productImages.productId, productId))
+    .orderBy(asc(productImages.position));
+}
+
 /** Existing colours and collections, to suggest in the product form. */
 export async function listAttributeSuggestions(db: Db) {
   const [colors, collections] = await Promise.all([
@@ -227,6 +280,34 @@ const sizesSql = (sizes: string[]) =>
   sql`array(select jsonb_array_elements_text(${JSON.stringify(sizes)}::jsonb))`;
 
 /**
+ * CTEs that write the gallery inside the same statement as the product write.
+ * `productIdSql` is the product row's id; `existsSql` guards on the product write having matched. Photos 0..n-1 are
+ * upserted and anything at position >= n is deleted; the two touch disjoint
+ * rows, so the unique (product_id, position) constraint can't race. No images
+ * sent = gallery untouched.
+ */
+function galleryCtes(productIdSql: SQL, existsSql: SQL, images: GalleryItem[]): SQL {
+  if (images.length === 0) return sql``;
+  return sql`,
+      g as (
+        insert into product_images (product_id, position, kind, src, width, height, alt)
+        select ${productIdSql}, (e.ord - 1)::int, e.v->>'kind', e.v->>'src',
+               (e.v->>'width')::int, (e.v->>'height')::int, e.v->>'alt'
+        from jsonb_array_elements(${JSON.stringify(images)}::jsonb) with ordinality as e(v, ord)
+        where ${existsSql}
+        on conflict (product_id, position) do update
+          set kind = excluded.kind, src = excluded.src, width = excluded.width,
+              height = excluded.height, alt = excluded.alt
+        returning 1
+      ),
+      gd as (
+        delete from product_images
+        where product_id = ${productIdSql} and position >= ${images.length}::int
+        returning 1
+      )`;
+}
+
+/**
  * Product + its stock row + audit entry in ONE statement (atomic on neon-http).
  * A unique or FK violation aborts the whole thing, so no partial product.
  */
@@ -259,7 +340,7 @@ export async function createProduct(
         insert into admin_audit (actor_user_id, action, target_type, target_id, detail)
         select ${actor.id}, 'product.create', 'product', slug, ${detail}::jsonb from p
         returning id
-      )
+      )${galleryCtes(sql`(select id from p)`, sql`exists (select 1 from p)`, input.images)}
       select count(*)::int as n from p
     `);
     return { ok: true, slug: input.slug };
@@ -282,7 +363,7 @@ export async function updateProduct(
   actor: Actor,
   id: number,
   input: ProductUpdateInput,
-): Promise<WriteResult & { previousImageSrc?: string }> {
+): Promise<WriteResult & { previousImageSrcs?: string[] }> {
   const detail = JSON.stringify({ name: input.name, priceKobo: input.price });
   const newSlug = input.slug ?? null;
   try {
@@ -298,6 +379,9 @@ export async function updateProduct(
     const result = await db.execute(sql`
       with old as (
         select id, slug, image_src from products where id = ${id}::int
+      ),
+      old_imgs as (
+        select src from product_images where product_id = ${id}::int
       ),
       u as (
         update products
@@ -330,13 +414,27 @@ export async function updateProduct(
                (${detail}::jsonb || jsonb_build_object('previousSlug', (select slug from old)))
         from u
         returning id
-      )
-      select count(*)::int as n, (select image_src from old) as previous_image_src from u
+      )${galleryCtes(sql`${id}::int`, sql`exists (select 1 from u)`, input.images)}
+      select count(*)::int as n,
+             (select image_src from old) as previous_image_src,
+             (select coalesce(json_agg(src), '[]'::json) from old_imgs) as previous_gallery
+      from u
     `);
-    const row = result.rows[0] as { n: number; previous_image_src: string | null };
-    return Number(row.n) === 1
-      ? { ok: true, previousImageSrc: row.previous_image_src ?? undefined }
-      : { ok: false, reason: "not_found" };
+    const row = result.rows[0] as {
+      n: number;
+      previous_image_src: string | null;
+      previous_gallery: string[] | string | null;
+    };
+    if (Number(row.n) !== 1) return { ok: false, reason: "not_found" };
+    const gallery = typeof row.previous_gallery === "string"
+      ? (JSON.parse(row.previous_gallery) as string[])
+      : (row.previous_gallery ?? []);
+    // No gallery sent = gallery untouched, so only the old card image can have gone stale.
+    const previous = [
+      ...(input.images.length > 0 ? gallery : []),
+      ...(row.previous_image_src ? [row.previous_image_src] : []),
+    ];
+    return { ok: true, previousImageSrcs: [...new Set(previous)] };
   } catch (err) {
     const code = pgErrorCode(err);
     if (code === "23503") return { ok: false, reason: "category_not_found" };

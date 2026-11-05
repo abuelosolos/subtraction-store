@@ -15,13 +15,15 @@ const dynamicBaseURL = {
 export const auth = betterAuth({
   ...(process.env.BETTER_AUTH_URL ? {} : { baseURL: dynamicBaseURL }),
   database: drizzleAdapter(db, { provider: "pg" }),
-  emailAndPassword: { enabled: true },
+  // Admin access is the signed cookie in src/lib/admin-auth.ts. Better Auth is
+  // kept only for its schema; nobody can register or sign in through it.
+  emailAndPassword: { enabled: true, disableSignUp: true },
   user: {
     additionalFields: {
       // Contact number, E.164. `input: false` so clients cannot set it through
       // Better Auth's own endpoints; only the validated server action writes it.
       phone: { type: "string", required: false, input: false },
-      // "user" | "admin". Never client-settable; see scripts/make-admin.ts.
+      // "user" | "admin". Never client-settable; the owner row is upserted at admin login.
       role: { type: "string", required: false, defaultValue: "user", input: false },
     },
   },

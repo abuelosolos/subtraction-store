@@ -4,26 +4,50 @@
  */
 
 .hero-media {
-  position: relative;
+  /* Phones: fills the hero under the navbar, cropped (cover) around the subject. */
+  --hero-pos: 49% 50%;
+  position: absolute;
+  inset: var(--navbar-height) 0 0 0;
   z-index: 0;
-  flex: none;
-  width: 100%;
-  aspect-ratio: 2560 / 1340;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent);
-  mask-image: linear-gradient(to bottom, black 75%, transparent);
 }
 
 @media (min-width: 48rem) {
   .hero-media {
+    --hero-pos: 50% 30%;
+    position: relative;
+    inset: auto;
+    flex: none;
+    width: 100%;
     height: 100%;
-    aspect-ratio: auto;
-    -webkit-mask-image: none;
-    mask-image: none;
   }
 }
 
 .hero-media > img,
+.hero-media > video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--hero-pos);
+}
+
+/*
+ * Phones: write-up and buttons over the bottom of the photo (the dark jacket),
+ * on a gradient so they stay readable. Dark-context colour roles; deliberately
+ * not .surface-dark, which would put a solid background under the gradient.
+ */
+.hero-copy {
+  --surface: var(--color-surface-dark);
+  --ink: var(--color-ink-on-dark);
+  --muted: var(--color-muted-on-dark);
+  --subtle: var(--color-muted-on-dark);
+  --line: var(--color-line-on-dark);
+  background-image: linear-gradient(to top, rgb(0 0 0 / 0.85), rgb(0 0 0 / 0.55) 55%, transparent);
+  color: var(--ink);
+}
+
 .hero-media > video {
   position: absolute;
   inset: 0;

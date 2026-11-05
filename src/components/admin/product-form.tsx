@@ -7,7 +7,14 @@ import { useState, type FormEvent } from "react";
 import { archiveProductAction, saveProductAction } from "@/app/admin/products/actions";
 import { AdminCard } from "@/components/admin/admin-card";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { ImageField, type ImageValue } from "@/components/admin/image-field";
+import {
+  GalleryField,
+  defaultAlt,
+  newPhotoId,
+  type PhotoKind,
+  type PhotoValue,
+} from "@/components/admin/gallery-field";
+import type { ImageValue } from "@/components/admin/image-field";
 import { Notice } from "@/components/admin/notice";
 
 type Category = { id: number; name: string };
@@ -26,7 +33,10 @@ export type ProductFormValues = {
   gender: "men" | "women" | "unisex";
   color: string;
   collection: string;
+  /** Main/card image (products.image_*). */
   image: ImageValue;
+  /** Saved gallery in display order; empty = only the card image exists. */
+  photos?: { kind: PhotoKind; src: string; width: number; height: number; alt: string }[];
   initialStock?: number;
   archived?: boolean;
 };
@@ -59,7 +69,16 @@ export function ProductForm({
 }) {
   const router = useRouter();
   const editing = values.id !== undefined;
-  const [image, setImage] = useState<ImageValue>(values.image);
+  const [photos, setPhotos] = useState<PhotoValue[]>(() => {
+    const saved = (values.photos ?? []).map((p) => ({ ...p, id: newPhotoId(), altEdited: true }));
+    if (saved.length > 0) return saved;
+    // No gallery rows yet: start from the card image so it can be kept and added to.
+    return values.image.src ? [{ ...values.image, kind: "front" as const, id: newPhotoId(), altEdited: true }] : [];
+  });
+  // The main (card) photo is the one matching the saved card image, else the first.
+  const [mainId, setMainId] = useState<string | undefined>(
+    () => (photos.find((p) => p.src === values.image.src) ?? photos[0])?.id,
+  );
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -74,9 +93,33 @@ export function ProductForm({
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
-    setPending(true);
     setStatus(null);
     setErrors({});
+
+    if (photos.some((p) => p.status === "uploading")) {
+      setStatus({ kind: "error", text: "Wait for the photos to finish uploading." });
+      return;
+    }
+    if (photos.some((p) => p.status === "error")) {
+      setStatus({ kind: "error", text: "Some photos failed to upload. Remove or replace them first." });
+      return;
+    }
+    if (photos.length === 0) {
+      setErrors({ images: "Add at least one photo." });
+      setStatus({ kind: "error", text: "Check the highlighted fields." });
+      return;
+    }
+    const mainIndex = Math.max(0, photos.findIndex((p) => p.id === mainId));
+    const main = photos[mainIndex];
+    const images = photos.map((p) => ({
+      kind: p.kind,
+      src: p.src,
+      width: p.width,
+      height: p.height,
+      alt: p.alt.trim() || defaultAlt(String(f.get("name") ?? ""), p.kind),
+    }));
+
+    setPending(true);
     try {
       const r = await saveProductAction({
         id: values.id,
@@ -91,10 +134,13 @@ export function ProductForm({
         gender: String(f.get("gender") ?? "unisex"),
         color: String(f.get("color") ?? ""),
         collection: String(f.get("collection") ?? ""),
-        imageSrc: image.src,
-        imageWidth: image.width,
-        imageHeight: image.height,
-        imageAlt: image.alt,
+        // The server derives the card image from images[mainIndex]; these keep the payload complete.
+        imageSrc: main.src,
+        imageWidth: main.width,
+        imageHeight: main.height,
+        imageAlt: images[mainIndex].alt,
+        images,
+        mainIndex,
         initialStock: String(f.get("initialStock") ?? "0"),
       });
       if (r.ok) {
@@ -279,8 +325,15 @@ export function ProductForm({
         </div>
       </AdminCard>
 
-      <AdminCard title="Image">
-        <ImageField folder="products" value={image} onChange={setImage} errors={errors} defaultAlt={nameValue} />
+      <AdminCard title="Photos">
+        <GalleryField
+          photos={photos}
+          setPhotos={setPhotos}
+          mainId={mainId}
+          setMainId={setMainId}
+          productName={nameValue}
+          errors={{ ...errors, images: errors.images ?? errors.imageSrc }}
+        />
       </AdminCard>
 
       {editing ? (

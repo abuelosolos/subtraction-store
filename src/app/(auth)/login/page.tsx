@@ -9,11 +9,11 @@ export const metadata: Metadata = { title: "Login | SUBTRACTION." };
 export default function LoginPage() {
   return (
     <AuthShell
-      title="Login"
-      subtitle="Welcome back, we hope you find great pick in our endless collection of ultra rich black luxurious outfits."
+      title="Admin"
+      subtitle="Enter the admin password to manage the store."
     >
       <Suspense>
-        <AuthForm mode="login" />
+        <AuthForm />
       </Suspense>
     </AuthShell>
   );

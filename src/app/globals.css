@@ -338,13 +338,14 @@
   max-width: var(--container-frame);
   margin-inline: auto;
 
-  /* Phones: white, full-height column. The photo sits near the top at its
-     natural ratio (gap below the navbar is 30% of the photo's own height),
-     then the wordmark, write-up and buttons. Same tokens as .surface-light. */
+  /* Phones: one full screen (below the category strip). The media fills it
+     under the navbar (see .hero-media), and the write-up and buttons sit at
+     the bottom over it. Same tokens as .surface-light. */
   display: flex;
   flex-direction: column;
-  min-height: 100svh;
-  padding-top: calc(var(--navbar-height) + 100vw * 1340 / 2560 * 0.3);
+  justify-content: flex-end;
+  height: calc(100svh - var(--strip-h));
+  min-height: 30rem;
   --surface: var(--color-surface-light);
   --ink: var(--color-ink-on-light);
   --muted: var(--color-muted-on-light);
@@ -356,8 +357,8 @@
   /* md and up: the light photographic overlay composition (.surface-light). */
   @media (min-width: 48rem) {
     display: grid;
+    height: auto;
     min-height: 0;
-    padding-top: 0;
     aspect-ratio: 1280 / 670;
     --surface: var(--color-surface-light);
     --ink: var(--color-ink-on-light);
@@ -385,41 +386,6 @@
     object-position: 50% 30%;
     -webkit-mask-image: none;
     mask-image: none;
-  }
-}
-
-/*
- * Decorative + and - marks drifting around the phone hero. Position comes from
- * --fx / --fy (percent of the section); --fdur / --fdelay stagger the drift.
- */
-@utility hero-float {
-  position: absolute;
-  left: var(--fx);
-  top: var(--fy);
-  z-index: 0;
-  font-family: var(--font-accent);
-  font-size: 1.25rem;
-  line-height: 1;
-  color: var(--muted);
-  opacity: 0.55;
-  pointer-events: none;
-  animation: hero-float var(--fdur, 7s) ease-in-out var(--fdelay, 0s) infinite alternate;
-
-  @media (min-width: 48rem) {
-    display: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-}
-
-@keyframes hero-float {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(8px, -12px, 0);
   }
 }
 

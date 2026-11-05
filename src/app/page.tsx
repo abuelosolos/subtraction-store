@@ -43,8 +43,8 @@ export default async function Home() {
             loopSrc="/videos/hero/hero-loop.mp4"
           />
 
-          {/* Phones only: write-up and buttons under the photo (the wordmark stays as a screen-reader h1). */}
-          <div data-reveal style={{ "--ri": 0 } as React.CSSProperties} className="relative z-10 flex flex-1 flex-col justify-start gap-5 px-[var(--gutter)] pb-12 pt-6 md:hidden">
+          {/* Phones only: write-up and buttons over the bottom of the full-screen photo (the wordmark stays as a screen-reader h1). */}
+          <div data-reveal style={{ "--ri": 0 } as React.CSSProperties} className="hero-copy relative z-10 flex flex-col gap-5 px-[var(--gutter)] pb-[calc(2rem+env(safe-area-inset-bottom))] pt-32 md:hidden">
             <h1 className="sr-only">SUBTRACTION</h1>
             <p className="font-accent max-w-[26rem] text-body font-medium text-muted">
               At some point the closet got full and nothing felt right. That was the problem. We
@@ -55,13 +55,6 @@ export default async function Home() {
               <Link href="/story" data-hero-click="our_story" className="btn btn-outline">Our Story</Link>
             </div>
           </div>
-          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "8%", "--fy": "14%", "--fdur": "6s", "--fdelay": "0s" } as React.CSSProperties}>+</span>
-          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "84%", "--fy": "11%", "--fdur": "8s", "--fdelay": "1s" } as React.CSSProperties}>−</span>
-          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "90%", "--fy": "46%", "--fdur": "7s", "--fdelay": "2s" } as React.CSSProperties}>+</span>
-          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "6%", "--fy": "58%", "--fdur": "9s", "--fdelay": "0.5s" } as React.CSSProperties}>−</span>
-          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "76%", "--fy": "72%", "--fdur": "6.5s", "--fdelay": "1.5s" } as React.CSSProperties}>+</span>
-          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "18%", "--fy": "86%", "--fdur": "8.5s", "--fdelay": "2.5s" } as React.CSSProperties}>−</span>
-          <span aria-hidden="true" data-reveal className="hero-float md:hidden" style={{ "--reveal-opacity": 0.55, "--ri": 4, "--fx": "50%", "--fy": "92%", "--fdur": "7.5s", "--fdelay": "0.8s" } as React.CSSProperties}>+</span>
 
           {/* Left: brand statement */}
           <div data-reveal className="hero-anchor" style={anchor(35, 456, 308, 1)}>

@@ -71,7 +71,7 @@ export function HeroMedia({
         fill
         sizes="(min-width: 1280px) 1280px, 100vw"
         priority
-        style={{ objectFit: "cover", objectPosition: "50% 30%" }}
+        style={{ objectFit: "cover", objectPosition: "var(--hero-pos, 50% 30%)" }}
       />
       <video
         ref={s.setLoop}

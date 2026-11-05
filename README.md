@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SUBTRACTION.
 
-## Getting Started
+A dark, minimalist fashion storefront with its own admin back office. **This is a portfolio project**: a real, working shop front-end and catalogue, built to show full-stack skills rather than to take orders.
 
-First, run the development server:
+## What it is
+
+- **Storefront**: home page, collections, categories, product pages with photo galleries, search, cart and saved items.
+- **Admin back office** (`/admin`): manage products and their photos, categories, stock and orders. Works on phone (bottom nav) and desktop (sidebar).
+- **Single-owner admin login**: one password, no user accounts.
+
+## What is not available
+
+This is a demo, so these are switched off or not built:
+
+| Not available | Detail |
+| --- | --- |
+| Customer sign-in and registration | Removed. Shoppers browse without an account. |
+| Checkout and payments | The cart's Checkout button is disabled. |
+| Orders and account area | Removed from the storefront. |
+| Editing page content in admin | Home, story, lookbook, nav and footer text are fixed in code for now. |
+| Per-size stock | Sizes are display-only; stock is per product. |
+| Reviews, wishlists, product variants | Not built. |
+| Video uploads | The admin uploads images only. |
+
+`/login` exists only so the owner can reach `/admin`. It is not linked from the shop.
+
+## Tech stack
+
+| Area | Tools |
+| --- | --- |
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| Styling | Tailwind CSS 4 |
+| Database | Neon Postgres with Drizzle ORM |
+| Image storage | Vercel Blob |
+| Validation | Zod |
+| Tests and checks | Vitest, ESLint, `tsc` |
+
+## Dependencies
+
+**Runtime**
+
+- `next`, `react`, `react-dom`
+- `drizzle-orm`, `@neondatabase/serverless`
+- `@vercel/blob`
+- `better-auth` (kept for its database schema; sign-up is disabled)
+- `zod`
+
+**Development**
+
+- `typescript`, `eslint`, `eslint-config-next`
+- `tailwindcss`, `@tailwindcss/turbopack`
+- `drizzle-kit`, `tsx`, `dotenv`
+- `vitest`
+
+## Run it locally
+
+You need Node.js and a Neon Postgres database.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # then fill in the values below
+npm run db:migrate           # create the tables
+npm run db:seed              # add sample products (safe to re-run)
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Name | What it is |
+| --- | --- |
+| `DATABASE_URL` | Neon Postgres connection string |
+| `BETTER_AUTH_SECRET` | Random secret for the auth library |
+| `ADMIN_PASSWORD_HASH` | Hash of the admin password |
+| `ADMIN_SESSION_SECRET` | Random secret that signs the admin cookie |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token, needed for image uploads |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create the two admin values with:
 
-## Learn More
+```bash
+npx tsx scripts/admin-password.ts 'choose-a-long-password'
+```
 
-To learn more about Next.js, take a look at the following resources:
+Put the printed lines in `.env.local` and in your host's environment settings. Never commit `.env.local`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm run build` | Production build |
+| `npm run lint` | Lint the code |
+| `npm run typecheck` | Check types |
+| `npm test` | Run tests (database tests need `TEST_DATABASE_URL` pointing at a Neon test branch) |
+| `npm run db:generate` / `db:migrate` | Create and apply migrations |
+| `npm run db:seed` | Insert sample data without overwriting existing rows |
 
-## Deploy on Vercel
+## Project notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Design rules are in `docs/design-system.md`; image sources and licences are in `docs/image-credits.md`.
+- Prices are stored as integer minor units (kobo) and shown in NGN.

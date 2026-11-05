@@ -1,48 +1,12 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import Image from "next/image";
 import { useId, useRef, useState } from "react";
 
+import { IMAGE_TYPES, UploadError, measureUrl, uploadImage } from "@/components/admin/blob-upload";
 import { Notice } from "@/components/admin/notice";
 
 export type ImageValue = { src: string; width: number; height: number; alt: string };
-
-const MAX_BYTES = 5 * 1024 * 1024;
-const TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
-
-function measureUrl(url: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => reject(new Error("unreadable"));
-    img.src = url;
-  });
-}
-
-async function measureFile(file: File) {
-  const url = URL.createObjectURL(file);
-  try {
-    return await measureUrl(url);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
-/** Why an upload failed, in words: asks the server whether Blob storage is configured. */
-async function explainUploadFailure(): Promise<string> {
-  try {
-    const res = await fetch("/api/admin/upload", { method: "GET", cache: "no-store" });
-    if (res.status === 403) return "Your session can't upload. Sign in again as an admin.";
-    const body = (await res.json()) as { configured?: boolean };
-    if (body.configured === false) {
-      return "Blob storage isn't configured: BLOB_READ_WRITE_TOKEN is missing in this environment.";
-    }
-  } catch {
-    return "Couldn't reach the server. Check your connection and try again.";
-  }
-  return "The upload was rejected. Check the file type and size (JPEG, PNG, WebP or AVIF, up to 5 MB).";
-}
 
 /**
  * Controlled image picker: upload a file straight to Blob (token from
@@ -77,20 +41,12 @@ export function ImageField({
   async function onFile(file: File | undefined) {
     if (!file) return;
     setMessage(null);
-    if (!TYPES.includes(file.type)) return setMessage("Use a JPEG, PNG, WebP or AVIF image.");
-    if (file.size > MAX_BYTES) return setMessage("Images can be at most 5 MB.");
     setBusy(true);
     try {
-      const { width, height } = await measureFile(file);
-      const safeName = file.name.replace(/[^\w.\- ]/g, "_").slice(-80);
-      const blob = await upload(`${folder}/${safeName}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/admin/upload",
-        contentType: file.type,
-      });
-      onChange(withAlt({ ...value, src: blob.url, width, height }));
-    } catch {
-      setMessage(await explainUploadFailure());
+      const { src, width, height } = await uploadImage(folder, file);
+      onChange(withAlt({ ...value, src, width, height }));
+    } catch (err) {
+      setMessage(err instanceof UploadError ? err.message : "The upload failed. Try again.");
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -137,7 +93,7 @@ export function ImageField({
           ref={fileRef}
           id={`${id}-file`}
           type="file"
-          accept={TYPES.join(",")}
+          accept={IMAGE_TYPES.join(",")}
           disabled={busy}
           onChange={(e) => onFile(e.target.files?.[0])}
           className="sr-only"

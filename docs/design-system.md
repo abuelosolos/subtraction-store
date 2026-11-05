@@ -317,7 +317,7 @@ tracking.
 - **Empty block** on landing at y=2888 (1280x650, 20% white): what goes there?
 - **Social marks** (GitHub, Apple, Google) render white on the dark auth frame; confirm they
   stay monochrome.
-- **Placeholder email** `heiskumasi@gmail.com` appears in the form frames; it is not used as copy.
+- **Placeholder email** appears in the form frames; it is not used as copy.
 - **Partner lockup:** real partner name or placeholder text?
 - **Navbar icon layer names** are all `Icons/ArrowUpRight` regardless of glyph; cosmetic, for
   the icon export.

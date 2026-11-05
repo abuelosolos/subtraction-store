@@ -6,7 +6,12 @@ import { AdminGate } from "@/components/admin/admin-gate";
 import { AdminPage } from "@/components/admin/page-frame";
 import { ProductForm } from "@/components/admin/product-form";
 import { db } from "@/db";
-import { getAdminProduct, listAdminCategories, listAttributeSuggestions } from "@/lib/admin/catalogue";
+import {
+  getAdminProduct,
+  getAdminProductImages,
+  listAdminCategories,
+  listAttributeSuggestions,
+} from "@/lib/admin/catalogue";
 import { listStockHistory } from "@/lib/admin/stock";
 
 export default function EditProductPage({ params }: PageProps<"/admin/products/[id]">) {
@@ -24,11 +29,12 @@ export default function EditProductPage({ params }: PageProps<"/admin/products/[
 async function EditProduct({ params }: { params: PageProps<"/admin/products/[id]">["params"] }) {
   const id = z.coerce.number().int().positive().safeParse((await params).id);
   if (!id.success) notFound();
-  const [product, categories, suggestions, history] = await Promise.all([
+  const [product, categories, suggestions, history, photos] = await Promise.all([
     getAdminProduct(db, id.data),
     listAdminCategories(db),
     listAttributeSuggestions(db),
     listStockHistory(db, id.data, 10),
+    getAdminProductImages(db, id.data),
   ]);
   if (!product) notFound();
 
@@ -55,6 +61,7 @@ async function EditProduct({ params }: { params: PageProps<"/admin/products/[id]
           color: product.color,
           collection: product.collection ?? "",
           image: { src: product.imageSrc, width: product.imageWidth, height: product.imageHeight, alt: product.imageAlt },
+          photos: photos.map((p) => ({ ...p, kind: p.kind as "front" | "side" | "back" | "item" })),
           archived: product.archivedAt !== null,
         }}
       />

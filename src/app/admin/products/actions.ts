@@ -36,13 +36,20 @@ const isBlobUrl = (src: string) => {
   }
 };
 
-/** Best effort: a replaced upload should not linger in storage. Never fails the save. */
-async function deleteReplacedImage(previous: string | undefined, next: string) {
-  if (!previous || previous === next || !isBlobUrl(previous) || !process.env.BLOB_READ_WRITE_TOKEN) return;
+/**
+ * Best effort: uploads that were removed or replaced should not linger in
+ * storage. Only Blob URLs no longer used by the saved product are deleted.
+ * Never fails the save.
+ */
+async function deleteUnusedImages(previous: string[] | undefined, keep: string[]) {
+  if (!previous?.length || !process.env.BLOB_READ_WRITE_TOKEN) return;
+  const kept = new Set(keep);
+  const stale = previous.filter((src) => !kept.has(src) && isBlobUrl(src));
+  if (stale.length === 0) return;
   try {
-    await del(previous);
+    await del(stale);
   } catch (err) {
-    console.error("[admin] could not delete replaced image", previous, err);
+    console.error("[admin] could not delete replaced images", stale, err);
   }
 }
 
@@ -77,7 +84,10 @@ export async function saveProductAction(raw: unknown): Promise<ProductActionResu
         : { ok: false, reason: "failed" };
     }
     invalidateCatalog();
-    await deleteReplacedImage(r.previousImageSrc, input.data.imageSrc);
+    await deleteUnusedImages(r.previousImageSrcs, [
+      input.data.imageSrc,
+      ...input.data.images.map((img) => img.src),
+    ]);
     return { ok: true, id: id.data, slug: input.data.slug };
   } catch (err) {
     console.error("[admin] saveProductAction failed", { id: rawId }, err);
