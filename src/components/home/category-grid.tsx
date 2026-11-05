@@ -19,9 +19,9 @@ const categories: HomeCategory[] = [
     image: { src: "/images/products/heavy-puffer-jacket-m/front.webp", width: 928, height: 1152, alt: "Model in a black puffer jacket" },
   },
   {
-    label: "Puffers",
-    href: "/categories/jackets",
-    image: { src: "/images/products/cropped-puffer-jacket-w/front.webp", width: 848, height: 1264, alt: "Model in a cropped black puffer jacket" },
+    label: "Beanies",
+    href: "/categories/beanies",
+    image: { src: "/images/products/ribbed-tag-beanie-w/front.webp", width: 848, height: 1264, alt: "Model in a black ribbed beanie with a small woven tag" },
   },
   {
     label: "Caps",
