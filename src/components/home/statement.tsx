@@ -7,7 +7,7 @@ export function Statement() {
         <p className="max-w-[48rem] text-heading-2 font-semibold">
           We&rsquo;re not minimal or not colorful. We&rsquo;re an exceptional difference.
         </p>
-        <Link href="/story" className="btn btn-inverse btn-lg">
+        <Link href="#" className="btn btn-inverse btn-lg">
           Read our story
         </Link>
       </div>

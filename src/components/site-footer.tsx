@@ -30,7 +30,7 @@ const columns = [
     title: "Help",
     links: ["Shipping & delivery", "Returns", "Size guide", "Contact us"],
   },
-  { title: "Company", links: [{ label: "Our story", href: "/story" }, "Journal", "Careers", "Stockists"] },
+  { title: "Company", links: ["Our story", "Journal", "Careers", "Stockists"] },
 ];
 
 export function SiteFooter() {

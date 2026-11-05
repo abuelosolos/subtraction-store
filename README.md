@@ -17,7 +17,8 @@ This is a demo, so these are switched off or not built:
 | Customer sign-in and registration | Removed. Shoppers browse without an account. |
 | Checkout and payments | The cart's Checkout button is disabled. |
 | Orders and account area | Removed from the storefront. |
-| Editing page content in admin | Home, story, lookbook, nav and footer text are fixed in code for now. |
+| Our Story page | Deleted. The "Our Story" buttons are placeholders that go nowhere. |
+| Editing page content in admin | Home, lookbook, nav and footer text are fixed in code for now. |
 | Per-size stock | Sizes are display-only; stock is per product. |
 | Reviews, wishlists, product variants | Not built. |
 | Video uploads | The admin uploads images only. |

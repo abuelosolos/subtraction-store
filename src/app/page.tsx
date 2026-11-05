@@ -52,7 +52,7 @@ export default async function Home() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/collections" data-hero-click="explore_collection" className="btn btn-inverse">Explore Collection</Link>
-              <Link href="/story" data-hero-click="our_story" className="btn btn-outline">Our Story</Link>
+              <Link href="#" data-hero-click="our_story" className="btn btn-outline">Our Story</Link>
             </div>
           </div>
 
@@ -64,7 +64,7 @@ export default async function Home() {
               At some point the closet got full and nothing felt right. That was the problem. We
               built the answer.
             </p>
-            <Link href="/story" data-hero-click="our_story" className="btn btn-primary">
+            <Link href="#" data-hero-click="our_story" className="btn btn-primary">
               Our Story <ArrowUpRight />
             </Link>
             </div>

@@ -27,7 +27,7 @@ export function Campaign() {
             <Link href="/collections" className="btn btn-primary btn-lg">
               Explore collection
             </Link>
-            <Link href="/story" className="btn btn-ghost btn-lg">
+            <Link href="#" className="btn btn-ghost btn-lg">
               Our story
             </Link>
           </div>
