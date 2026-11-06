@@ -28,10 +28,27 @@ export async function generateMetadata({ params }: PageProps<"/products/[slug]">
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return {};
+  // Shown under the link preview (WhatsApp etc.); the image is ./opengraph-image.ts.
+  const description = clip(`${formatPrice(product.priceCents, product.currency)} · ${product.description}`, 200);
   return {
     title: `${product.name} | SUBTRACTION.`,
-    description: product.description,
+    description,
+    alternates: { canonical: `/products/${product.slug}` },
+    openGraph: {
+      type: "website",
+      siteName: "SUBTRACTION.",
+      locale: "en_NG",
+      url: `/products/${product.slug}`,
+      title: product.name,
+      description,
+    },
+    twitter: { card: "summary_large_image", title: product.name, description },
   };
+}
+
+function clip(text: string, max: number) {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length <= max ? flat : `${flat.slice(0, max - 1).trimEnd()}…`;
 }
 
 const stockCopy = {
