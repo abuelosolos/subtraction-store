@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { siteUrl } from "@/lib/og-image";
 import "./globals.css";
 
 // Font roles: see docs/design-system.md. Variables are mapped to --font-sans,
@@ -36,6 +37,16 @@ const dmSans = localFont({
 export const metadata: Metadata = {
   title: "SUBTRACTION.",
   description: "Premium black excellence. What happens when you take color away.",
+  // Absolute base for og:image and other metadata URLs; the preview image is app/opengraph-image.jpg.
+  metadataBase: siteUrl(),
+  openGraph: {
+    type: "website",
+    siteName: "SUBTRACTION.",
+    title: "SUBTRACTION.",
+    description: "Premium black excellence. What happens when you take color away.",
+    locale: "en_NG",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
