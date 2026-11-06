@@ -58,6 +58,10 @@ Catalogue tables are `categories`, `products`, `stock` (`src/db/catalog-schema.t
 
 Better Auth's own tables (user/session/account/verification) are not defined yet. Generate them with `npx @better-auth/cli generate`, put them in/re-export from `src/db/schema.ts`, then run `db:generate` + `db:migrate`; the auth routes will not work until this is done.
 
+## Link previews
+
+`src/app/opengraph-image.jpg` is a homepage screenshot in a laptop frame (re-shoot it when the hero changes). Product links get `src/app/products/[slug]/opengraph-image.ts`: the product photo rendered to a 1200x630 JPEG (WebP is converted, since WhatsApp handles JPEG reliably) by `src/lib/og-image.ts`; name and price + description come from `generateMetadata`. `metadataBase` comes from `APP_URL`/`BETTER_AUTH_URL` so og:image URLs are absolute.
+
 ## Admin conventions
 
 - **Access**: `user.role` (`"user"` | `"admin"`, `input:false` so no client can set it). Grant with `npx tsx scripts/make-admin.ts <email>`. Every admin page wraps content in `<AdminGate>` (`requireAdmin`) inside `<Suspense>`; every admin server action and API route must call `getAdminUser()` itself (actions are public POST endpoints). Never put admin data in `"use cache"`.
